@@ -21,7 +21,7 @@ const projectsData = [
         tags: ["Python", "Flask", "Robotics", "HRI", "Research", "ROS"],
         githubLink: undefined,
         liveLink: undefined,
-        date: "January 2025 - March 2025",
+        date: "January 2025 - April 2025",
     },
     {
         title: "UW Blueprint - Feeding Canadian Kids",

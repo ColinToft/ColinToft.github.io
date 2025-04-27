@@ -53,7 +53,7 @@ const projectsData = [
     {
         title: "Remember",
         description:
-            "A simplistic program that allows for the viewing and creation of events in a single-page view. The list layout allows you to see all upcoming events at a glance, and the sidebar allows you to create new events by simply tapping on the date. Created in Python with Pythonista for iOS.",
+            "A program that allows for the viewing and creation of events in a single-page view. The list layout allows you to see all upcoming events at a glance, and the sidebar allows you to create new events by simply tapping on the date. Created in Python with Pythonista for iOS.",
         tags: ["Python", "Pythonista", "iOS"],
         githubLink: "https://github.com/ColinToft/remember",
         liveLink: undefined,
@@ -72,7 +72,7 @@ const projectsData = [
     {
         title: "Shape Sprint",
         description:
-            "A Geometry Dash clone created in Java and Swing as the final project for my grade 11 computer science course.",
+            "A Geometry Dash clone created in Java and Swing.",
         tags: ["Java", "Swing", "Game Development"],
         githubLink: "https://github.com/ColinToft/shapesprint",
         liveLink:
@@ -83,7 +83,7 @@ const projectsData = [
     {
         title: "Middle C",
         description:
-            "Acoustic and electronic music created during free time. My most recent project is an electronic album called Continuum, now released on streaming services.",
+            "Acoustic and electronic music. My most recent project is an electronic album called Continuum, now released on streaming services.",
         tags: ["Music Production", "Electronic Music"],
         githubLink: undefined,
         liveLink: "https://www.youtube.com/channel/UCBGu6kMfz043zo7lzN4oUzQ",

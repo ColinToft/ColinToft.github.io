@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo, useRef, useEffect, useCallback } from "react";
 import ProjectCard from "./ProjectCard";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -93,11 +93,306 @@ const projectsData = [
     },
 ];
 
+// Define the structure for position data
+interface Position {
+    x: number;
+    y: number;
+}
+
 const Projects = () => {
     const [selectedId, setSelectedId] = useState<number | null>(null);
+    const [isMounted, setIsMounted] = useState(false);
+    // Ref for the grid container
+    const containerRef = useRef<HTMLDivElement>(null);
+    // Refs for individual card elements (or wrappers)
+    const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
+    // State to store calculated center positions of grid cells
+    const [cardPositions, setCardPositions] = useState<Position[]>([]);
+    // State for grid columns and dimensions
+    const [gridInfo, setGridInfo] = useState({ cols: 3, width: 0, height: 0 });
+    // State for dynamic offsets
+    const [cardOffsets, setCardOffsets] = useState<Position[]>([]);
+
+    // Ensure cardRefs array has the correct size
+    useEffect(() => {
+        cardRefs.current = cardRefs.current.slice(0, projectsData.length);
+    }, []);
 
     const selectedProject =
         selectedId !== null ? projectsData[selectedId] : null;
+
+    // --- Function to calculate grid cell positions (to be implemented) ---
+    const calculatePositions = useCallback(() => {
+        if (!containerRef.current) return;
+
+        const container = containerRef.current;
+        const containerWidth = container.offsetWidth;
+
+        // Determine columns based on Tailwind breakpoints (approximate)
+        let cols = 1;
+        if (containerWidth >= 1024) {
+            // lg
+            cols = 2; // Change from 3 to 2 for lg breakpoint
+        } else if (containerWidth >= 768) {
+            // md
+            cols = 2;
+        }
+        setGridInfo({
+            cols,
+            width: containerWidth,
+            height: container.offsetHeight,
+        });
+
+        const minMargin = 50; // Minimum margin between cards in pixels
+        const offsetXPercentage = 0.5; // Allows +/- 50% of cell width
+        const offsetYPercentage = 0.2; // Allows +/- 20% of cell width
+
+        // Helper function to check if a position maintains minimum margin with existing cards
+        const isValidPosition = (
+            basePos: Position,
+            newOffset: Position,
+            existingPositions: { basePos: Position; offset: Position }[],
+            cardRect: DOMRect
+        ): boolean => {
+            // Calculate the boundaries of the new card using actual dimensions
+            const newLeft = basePos.x + newOffset.x - cardRect.width / 2;
+            const newRight = basePos.x + newOffset.x + cardRect.width / 2;
+            const newTop = basePos.y + newOffset.y - cardRect.height / 2;
+            const newBottom = basePos.y + newOffset.y + cardRect.height / 2;
+
+            // Check against all existing card positions
+            return existingPositions.every(
+                ({ basePos: existingBase, offset: existingOffset }) => {
+                    // Calculate the boundaries of the existing card
+                    const existingLeft =
+                        existingBase.x + existingOffset.x - cardRect.width / 2;
+                    const existingRight =
+                        existingBase.x + existingOffset.x + cardRect.width / 2;
+                    const existingTop =
+                        existingBase.y + existingOffset.y - cardRect.height / 2;
+                    const existingBottom =
+                        existingBase.y + existingOffset.y + cardRect.height / 2;
+
+                    // Check if the cards are too close horizontally or vertically
+                    const horizontalOverlap = !(
+                        newRight + minMargin < existingLeft ||
+                        newLeft > existingRight + minMargin
+                    );
+                    const verticalOverlap = !(
+                        newBottom + minMargin < existingTop ||
+                        newTop > existingBottom + minMargin
+                    );
+
+                    // Return true if there's enough margin (no overlap considering minMargin)
+                    return !(horizontalOverlap && verticalOverlap);
+                }
+            );
+        };
+
+        // Generate new offsets with collision avoidance
+        const newOffsets: Position[] = [];
+        const cardElements = cardRefs.current.filter(
+            (ref) => ref !== null
+        ) as HTMLDivElement[];
+
+        if (
+            cardElements.length === 0 ||
+            cardElements.length !== projectsData.length
+        ) {
+            // If we don't have refs yet, wait for next render
+            setCardOffsets([]);
+            setCardPositions([]);
+            return;
+        }
+
+        // Get the first card's dimensions to use as reference
+        const cardRect = cardElements[0].getBoundingClientRect();
+        const containerRect = container.getBoundingClientRect();
+
+        // Calculate base positions from actual card positions
+        const basePositions: Position[] = cardElements.map((card) => {
+            const rect = card.getBoundingClientRect();
+            return {
+                x: rect.left - containerRect.left + rect.width / 2,
+                y: rect.top - containerRect.top + rect.height / 2,
+            };
+        });
+
+        // Generate offsets with collision avoidance
+        for (let i = 0; i < projectsData.length; i++) {
+            const basePos = basePositions[i];
+            let validOffsetFound = false;
+            let attempts = 0;
+            const maxAttempts = 50;
+
+            while (!validOffsetFound && attempts < maxAttempts) {
+                const candidateOffset = {
+                    x:
+                        (((Math.random() - 0.5) * containerWidth) / cols) *
+                        offsetXPercentage,
+                    y:
+                        (((Math.random() - 0.5) * containerWidth) / cols) *
+                        offsetYPercentage,
+                };
+
+                if (
+                    isValidPosition(
+                        basePos,
+                        candidateOffset,
+                        basePositions.slice(0, i).map((pos, idx) => ({
+                            basePos: pos,
+                            offset: newOffsets[idx],
+                        })),
+                        cardRect
+                    )
+                ) {
+                    newOffsets.push(candidateOffset);
+                    validOffsetFound = true;
+                }
+
+                attempts++;
+            }
+
+            // If no valid position found after max attempts, use minimal offset
+            if (!validOffsetFound) {
+                newOffsets.push({ x: 0, y: 0 });
+            }
+        }
+
+        setCardOffsets(newOffsets);
+        setCardPositions(basePositions);
+    }, [projectsData.length]); // Dependency: length of projects
+
+    // Set mounted state after initial render on client
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
+    // Run position calculation on mount and resize
+    useEffect(() => {
+        calculatePositions(); // Initial calculation
+
+        const resizeObserver = new ResizeObserver(() => {
+            calculatePositions(); // Recalculate on resize
+        });
+
+        if (containerRef.current) {
+            resizeObserver.observe(containerRef.current);
+        }
+
+        return () => {
+            resizeObserver.disconnect(); // Cleanup observer
+        };
+    }, [calculatePositions]);
+
+    // --- Component for rendering lines ---
+    interface LineProps {
+        start: Position;
+        end: Position;
+    }
+    const Line: React.FC<LineProps> = ({ start, end }) => {
+        const dx = end.x - start.x;
+        const dy = end.y - start.y;
+        const distance = Math.sqrt(dx * dx + dy * dy);
+        const angle = Math.atan2(dy, dx) * (180 / Math.PI); // angle in degrees
+
+        // Style for the line div
+        const lineStyle: React.CSSProperties = {
+            position: "absolute",
+            left: `${start.x}px`, // Start the line at the start point
+            top: `${start.y}px`,
+            width: `${distance}px`, // Length of the line
+            height: "1px", // Thickness of the line
+            backgroundColor: "rgba(165, 243, 252, 0.4)", // Light cyan, semi-transparent
+            transformOrigin: "left center", // Rotate around the starting point
+            transform: `rotate(${angle}deg)`,
+            zIndex: -1, // Ensure lines are behind cards if needed (though container is separate)
+            filter: "drop-shadow(0 0 3px rgba(165, 243, 252, 0.6))", // Glow effect
+        };
+
+        return <div style={lineStyle} />;
+    };
+
+    // --- Logic to determine which lines to draw ---
+    const linesToDraw = useMemo(() => {
+        const lines: LineProps[] = [];
+        // Ensure both positions and offsets are calculated
+        if (
+            cardPositions.length === 0 ||
+            cardOffsets.length === 0 ||
+            gridInfo.cols === 0
+        )
+            return lines;
+        if (
+            cardPositions.length !== cardOffsets.length ||
+            cardPositions.length !== projectsData.length
+        )
+            return lines;
+
+        const { cols } = gridInfo;
+
+        for (let i = 0; i < projectsData.length; i++) {
+            const currentPos = cardPositions[i];
+            // Apply offset unless this is the selected card
+            const currentOffset =
+                selectedId === i ? { x: 0, y: 0 } : cardOffsets[i];
+            if (!currentPos || !currentOffset) continue;
+
+            const startPos: Position = {
+                x: currentPos.x + currentOffset.x,
+                y: currentPos.y + currentOffset.y,
+            };
+
+            const currentRow = Math.floor(i / cols);
+            const currentCol = i % cols;
+
+            // Connect horizontally (if not last in row)
+            const rightNeighborIndex = i + 1;
+            if (
+                currentCol < cols - 1 &&
+                rightNeighborIndex < projectsData.length
+            ) {
+                const rightPos = cardPositions[rightNeighborIndex];
+                // Apply offset unless this is the selected card
+                const rightOffset =
+                    selectedId === rightNeighborIndex
+                        ? { x: 0, y: 0 }
+                        : cardOffsets[rightNeighborIndex];
+                if (rightPos && rightOffset) {
+                    const endPos: Position = {
+                        x: rightPos.x + rightOffset.x,
+                        y: rightPos.y + rightOffset.y,
+                    };
+                    lines.push({ start: startPos, end: endPos });
+                }
+            }
+
+            // Connect vertically (if not last row)
+            const belowNeighborIndex = i + cols;
+            if (belowNeighborIndex < projectsData.length) {
+                const belowPos = cardPositions[belowNeighborIndex];
+                // Apply offset unless this is the selected card
+                const belowOffset =
+                    selectedId === belowNeighborIndex
+                        ? { x: 0, y: 0 }
+                        : cardOffsets[belowNeighborIndex];
+                if (belowPos && belowOffset) {
+                    const endPos: Position = {
+                        x: belowPos.x + belowOffset.x,
+                        y: belowPos.y + belowOffset.y,
+                    };
+                    lines.push({ start: startPos, end: endPos });
+                }
+            }
+        }
+        return lines;
+    }, [
+        cardPositions,
+        cardOffsets,
+        gridInfo.cols,
+        projectsData.length,
+        selectedId,
+    ]); // Add selectedId to dependencies
 
     return (
         <>
@@ -117,15 +412,50 @@ const Projects = () => {
                     </h2>
                 </motion.div>
 
-                <div className='grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-6xl w-full'>
+                {/* Grid Container - Add ref and relative positioning */}
+                <div
+                    ref={containerRef}
+                    className='relative grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-24 max-w-6xl w-full'
+                >
+                    {/* Absolute container for lines - behind cards */}
+                    <div className='absolute inset-0 pointer-events-none overflow-hidden z-0'>
+                        {/* Render lines here */}
+                        {linesToDraw.map(({ start, end }) => (
+                            <Line
+                                key={`${start.x}-${start.y}-${end.x}-${end.y}`}
+                                start={start}
+                                end={end}
+                            />
+                        ))}
+                    </div>
+
                     {projectsData.map((project, index) => (
-                        <ProjectCard
-                            key={index}
-                            {...project}
-                            index={index}
-                            layoutId={`card-container-${index}`}
-                            onClick={() => setSelectedId(index)}
-                        />
+                        // Wrapper div to attach ref for position calculation
+                        <div
+                            key={`card-wrapper-${index}`}
+                            ref={(el) => {
+                                cardRefs.current[index] = el;
+                            }}
+                            className='max-w-sm mx-auto'
+                            style={{
+                                // Keep offset on non-selected cards, remove it only from the selected card
+                                transform:
+                                    isMounted &&
+                                    (selectedId === null ||
+                                        selectedId !== index)
+                                        ? `translate(${cardOffsets[index]?.x}px, ${cardOffsets[index]?.y}px)`
+                                        : "none",
+                                transition: "transform 0.3s ease-out", // Smooth transition for offset
+                            }}
+                        >
+                            <ProjectCard
+                                {...project}
+                                index={index}
+                                layoutId={`card-container-${index}`}
+                                onClick={() => setSelectedId(index)}
+                                // No direct style prop needed on ProjectCard itself now
+                            />
+                        </div>
                     ))}
                 </div>
             </section>

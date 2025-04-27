@@ -8,7 +8,7 @@ const projectsData = [
     {
         title: "UW Blueprint - Sistema Toronto",
         description:
-            "Creating a platform for registered charity Sistema Toronto, which provides music lessons for students in underserved communities. Built a calendar system for volunteer music teachers and an admin dashboard for managing lessons and absences.",
+            "Created a platform for registered charity Sistema Toronto, which provides music lessons for students in underserved communities. Built a calendar system for volunteer music teachers and an admin dashboard for managing lessons and absences.",
         tags: ["React", "Python", "Flask", "Full Stack", "TypeScript"],
         githubLink: undefined,
         liveLink: undefined,
@@ -17,7 +17,7 @@ const projectsData = [
     {
         title: "Social and Intelligent Robotics Research (SIRRL)",
         description:
-            "Building games in Python and Flask to assist in speech therapy for children, incorporating a small humanoid robot to help with engagement. Designed and implemented idle motion gestures to enhance human-robot interaction.",
+            "Built games in Python and Flask to assist in speech therapy for children, incorporating a small humanoid robot to help with engagement. Designed and implemented idle motion gestures to enhance human-robot interaction.",
         tags: ["Python", "Flask", "Robotics", "HRI", "Research", "ROS"],
         githubLink: undefined,
         liveLink: undefined,

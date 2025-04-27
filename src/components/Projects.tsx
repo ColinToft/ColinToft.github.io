@@ -18,7 +18,7 @@ const projectsData = [
         title: "Social and Intelligent Robotics Research (SIRRL)",
         description:
             "Building games in Python and Flask to assist in speech therapy for children, incorporating a small humanoid robot to help with engagement. Designed and implemented idle motion gestures to enhance human-robot interaction.",
-        tags: ["Python", "Flask", "Robotics", "HRI", "Research"],
+        tags: ["Python", "Flask", "Robotics", "HRI", "Research", "ROS"],
         githubLink: undefined,
         liveLink: undefined,
         date: "January 2025 - March 2025",

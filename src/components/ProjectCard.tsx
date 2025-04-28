@@ -39,6 +39,12 @@ interface ProjectCardProps {
     onClose?: () => void;
 }
 
+// Helper function to get first sentence
+const getFirstSentence = (text: string): string => {
+    const match = text.match(/^[^.!?]+[.!?]/);
+    return match ? match[0].trim() : text;
+};
+
 const ProjectCard: React.FC<ProjectCardProps> = ({
     title,
     description,
@@ -79,7 +85,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
                     {title}
                 </h3>
                 <p className='text-slate-400 mb-4 text-sm leading-relaxed'>
-                    {description}
+                    {isExpanded ? description : getFirstSentence(description)}
                 </p>
                 <div className='flex flex-wrap gap-2 mb-4'>
                     {tags.map((tag, i) => (
@@ -152,7 +158,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
         </>
     );
 
-    const baseClasses = "p-6 rounded-lg flex flex-col h-full relative";
+    const baseClasses = "p-6 rounded-lg flex flex-col relative";
     const gridCardClasses =
         "bg-slate-800/40 backdrop-blur-sm shadow-lg border border-slate-700/50";
     const expandedCardClasses =

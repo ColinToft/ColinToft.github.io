@@ -173,9 +173,9 @@ const ProjectCard = forwardRef<HTMLDivElement, ProjectCardProps>(
 
         const baseClasses = "p-6 rounded-lg flex flex-col relative h-full";
         const gridCardClasses =
-            "bg-slate-800/40 backdrop-blur-sm shadow-lg border border-slate-700/50";
+            "bg-slate-800/90 shadow-lg border border-slate-700/50 hover:bg-slate-800/90 transition-colors";
         const expandedCardClasses =
-            "bg-slate-800/60 backdrop-blur-md shadow-xl border border-slate-700/50 max-w-2xl w-full";
+            "bg-slate-800/95 shadow-xl border border-slate-700/50 max-w-2xl w-full";
 
         if (isExpanded) {
             return (

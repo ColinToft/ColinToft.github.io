@@ -300,13 +300,13 @@ const Projects = () => {
             position: "absolute",
             left: `${start.x}px`,
             top: `${start.y}px`,
-            width: `${distance}px`, // Length of the line
-            height: "1px", // Thickness of the line
+            width: `${distance}px`,
+            height: "1px",
             backgroundColor: "rgba(165, 243, 252, 0.4)",
-            transformOrigin: "left center", // Rotate around the starting point
-            transform: `rotate(${angle}deg)`,
-            zIndex: -1, // Ensure lines are behind cards
-            filter: "drop-shadow(0 0 3px rgba(165, 243, 252, 0.6))", // Glow effect
+            transformOrigin: "left center",
+            transform: `rotate(${angle}deg) translateY(-50%)`, // Added translateY to center the line
+            zIndex: -1,
+            filter: "drop-shadow(0 0 3px rgba(165, 243, 252, 0.6))",
         };
 
         return <div style={lineStyle} />;

@@ -162,7 +162,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
     const gridCardClasses =
         "bg-slate-800/40 backdrop-blur-sm shadow-lg border border-slate-700/50";
     const expandedCardClasses =
-        "bg-slate-800/60 backdrop-blur-md shadow-xl border border-slate-700/50 max-w-2xl w-full";
+        "bg-slate-800/60 backdrop-blur-md shadow-xl border border-slate-700/50 max-w-2xl w-full h-full";
 
     if (isExpanded) {
         return (
@@ -177,7 +177,7 @@ const ProjectCard: React.FC<ProjectCardProps> = ({
     }
 
     return (
-        <div onClick={onClick} className='cursor-pointer h-full'>
+        <div onClick={onClick} className='cursor-pointer'>
             <motion.div
                 layoutId={layoutId}
                 className={`${baseClasses} ${gridCardClasses}`}

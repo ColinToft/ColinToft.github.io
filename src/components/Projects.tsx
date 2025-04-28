@@ -150,7 +150,6 @@ const Projects = () => {
         if (!containerRef.current) return;
 
         const container = containerRef.current;
-        const containerRect = container.getBoundingClientRect();
         const containerWidth = container.offsetWidth;
         let currentTargetHeight = Math.max(container.offsetHeight, 800);
         const initialContainerHeight = currentTargetHeight;
@@ -432,7 +431,6 @@ const Projects = () => {
         if (!containerRef.current) return; // Need container ref
 
         const handleResize = () => {
-            console.log("Resize detected, scheduling recalculation...");
             setPositionsReady(false); // Reset on resize start
             clearTimeout((window as any).__resizeTimeout);
             (window as any).__resizeTimeout = setTimeout(() => {
@@ -445,7 +443,6 @@ const Projects = () => {
         resizeObserver.observe(containerRef.current);
 
         return () => {
-            console.log("Cleaning up resize observer and timer.");
             clearTimeout((window as any).__resizeTimeout); // Cleanup resize timer
             resizeObserver.disconnect();
         };
@@ -616,7 +613,6 @@ const Projects = () => {
             }
         }
         return lines;
-        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [itemPositions]);
 
     return (

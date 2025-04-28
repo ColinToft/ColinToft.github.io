@@ -15,9 +15,9 @@ const projectsData = [
         date: "January 2025 - April 2025",
     },
     {
-        title: "Social and Intelligent Robotics Research (SIRRL)",
+        title: "Idle Motion in Human-Robot Interaction",
         description:
-            "Built games in Python and Flask to assist in speech therapy for children, incorporating a small humanoid robot to help with engagement. Designed and implemented idle motion gestures to enhance human-robot interaction.",
+            "Undergraduate research assistantship at the Social and Intelligent Robotics Research Lab (SIRRL). Built games in Python and Flask to assist in speech therapy for children, incorporating a small humanoid robot to help with engagement. Designed and implemented idle motion gestures to enhance human-robot interaction.",
         tags: ["Python", "Flask", "Robotics", "HRI", "Research", "ROS"],
         githubLink: undefined,
         liveLink: undefined,
@@ -26,34 +26,43 @@ const projectsData = [
     {
         title: "UW Blueprint - Feeding Canadian Kids",
         description:
-            "Created a full-stack platform for Feeding Canadian Kids charity, connecting food providers with after-school programs. Built with React frontend and Python (Flask) backend using GraphQL and MongoDB.",
-        tags: ["React", "Python", "Flask", "GraphQL", "MongoDB"],
+            "Created a full-stack platform for Feeding Canadian Kids charity, connecting food providers with after-school programs.",
+        tags: ["React", "Python", "Flask", "Full Stack", "GraphQL", "MongoDB"],
         githubLink: undefined,
         liveLink: undefined,
         date: "April 2023 - September 2024",
     },
     {
-        title: "Spotify Music Timer",
-        description:
-            "A website that creates playlists of a specific length, based on the music in your Spotify account. Programmed using HTML (Bootstrap 4), CSS, Javascript and Spotify's Web API.",
-        tags: ["HTML", "CSS", "JavaScript", "Bootstrap", "Spotify API"],
-        githubLink: undefined,
-        liveLink: "https://colintoft.com/musictimer",
-        date: "2023",
-    },
-    {
         title: "JogRoute",
         description:
             "A website allowing users to create running routes with a specified length and location.",
-        tags: ["Web Development"],
-        githubLink: undefined,
+        tags: ["Full Stack", "Go", "OpenStreetMap API", "React", "TypeScript"],
+        githubLink: "https://github.com/ColinToft/JogRoute",
         liveLink: "https://jogroute.netlify.app",
+        date: "2023",
+    },
+    {
+        title: "ZIR Compiler (Work in Progress)",
+        description:
+            "A custom compiler for a C-like programming language, inspired by the LLVM project.",
+        tags: ["Compilers", "C++", "LLVM"],
+        githubLink: "https://github.com/ColinToft/ZIR-Compiler",
+        liveLink: undefined,
+        date: "2023 - Present",
+    },
+    {
+        title: "Spotify Music Timer",
+        description:
+            "A website that creates playlists of a specific length, based on the music in your Spotify account.",
+        tags: ["HTML", "CSS", "JavaScript", "Bootstrap", "Spotify API"],
+        githubLink: undefined,
+        liveLink: "https://colintoft.com/musictimer",
         date: "2022",
     },
     {
         title: "Remember",
         description:
-            "A program that allows for the viewing and creation of events in a single-page view. The list layout allows you to see all upcoming events at a glance, and the sidebar allows you to create new events by simply tapping on the date. Created in Python with Pythonista for iOS.",
+            "A to-do list app that allows for the viewing and creation of events in a single-page view. The list layout allows you to see all upcoming events at a glance, and the sidebar allows you to create new events by simply tapping on the date.",
         tags: ["Python", "Pythonista", "iOS"],
         githubLink: "https://github.com/ColinToft/remember",
         liveLink: undefined,
@@ -61,18 +70,8 @@ const projectsData = [
         date: "2021",
     },
     {
-        title: "ZIR Compiler (Work in Progress)",
-        description:
-            "A custom compiler for a C-like programming language, inspired by the LLVM project.",
-        tags: ["Compiler", "C-like", "LLVM"],
-        githubLink: "https://github.com/ColinToft/ZIR-Compiler",
-        liveLink: undefined,
-        date: "2021 - Present",
-    },
-    {
         title: "Shape Sprint",
-        description:
-            "A Geometry Dash clone created in Java and Swing.",
+        description: "A Geometry Dash clone.",
         tags: ["Java", "Swing", "Game Development"],
         githubLink: "https://github.com/ColinToft/shapesprint",
         liveLink:
@@ -83,7 +82,7 @@ const projectsData = [
     {
         title: "Middle C",
         description:
-            "Acoustic and electronic music. My most recent project is an electronic album called Continuum, now released on streaming services.",
+            "Original acoustic and electronic music. My most recent project is an electronic album called Continuum, now released on streaming services.",
         tags: ["Music Production", "Electronic Music"],
         githubLink: undefined,
         liveLink: "https://www.youtube.com/channel/UCBGu6kMfz043zo7lzN4oUzQ",
@@ -415,11 +414,10 @@ const Projects = () => {
                 {/* Grid Container - Add ref and relative positioning */}
                 <div
                     ref={containerRef}
-                    className='relative grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-24 max-w-6xl w-full'
+                    className='relative grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-24 max-w-6xl w-full grid-flow-row-dense items-start'
                 >
                     {/* Absolute container for lines - behind cards */}
                     <div className='absolute inset-0 pointer-events-none overflow-hidden z-0'>
-                        {/* Render lines here */}
                         {linesToDraw.map(({ start, end }) => (
                             <Line
                                 key={`${start.x}-${start.y}-${end.x}-${end.y}`}
@@ -436,7 +434,7 @@ const Projects = () => {
                             ref={(el) => {
                                 cardRefs.current[index] = el;
                             }}
-                            className='max-w-sm mx-auto'
+                            className='max-w-sm mx-auto h-auto'
                             style={{
                                 // Keep offset on non-selected cards, remove it only from the selected card
                                 transform:

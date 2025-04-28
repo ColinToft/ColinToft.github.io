@@ -3,6 +3,18 @@
 import { motion, useScroll, useMotionValueEvent } from "framer-motion";
 import { FiChevronDown } from "react-icons/fi";
 import { useState } from "react";
+import Ticker from "./Ticker";
+
+const TICKER_WORDS = [
+    "Programmer",
+    "Mathematician",
+    "Musician",
+    "Innovator",
+    "Problem Solver",
+    "Creator",
+    "Big Brother",
+    "Thinker",
+];
 
 const Hero = () => {
     const [isScrolled, setIsScrolled] = useState(false);
@@ -26,15 +38,7 @@ const Hero = () => {
             >
                 Colin Toft
             </motion.h1>
-            <motion.p
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.8, delay: 0.2, ease: "easeInOut" }}
-                className='text-lg md:text-2xl text-slate-100 max-w-2xl'
-            >
-                Computer Science student exploring systems, AI, and visual
-                computing
-            </motion.p>
+            <Ticker words={TICKER_WORDS} isScrolled={isScrolled} />
             <motion.div
                 initial={{ opacity: 0, y: 0 }}
                 animate={{

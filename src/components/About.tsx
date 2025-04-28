@@ -58,10 +58,34 @@ const About = () => {
                     </p>
                     <p className='text-slate-100 text-lg mb-6 leading-relaxed'>
                         Outside of school and internships, you can find me
-                        developing software for nonprofits at UW Blueprint,
-                        working on creative projects at Socratica, writing and
-                        producing music, and staying active through running and
-                        rock climbing.
+                        developing software for nonprofits at{" "}
+                        <a
+                            href='https://uwblueprint.org'
+                            target='_blank'
+                            rel='noopener noreferrer'
+                            className='text-white underline hover:text-slate-300'
+                        >
+                            UW Blueprint
+                        </a>
+                        , working on creative projects at{" "}
+                        <a
+                            href='https://socratica.info'
+                            target='_blank'
+                            rel='noopener noreferrer'
+                            className='text-white underline hover:text-slate-300'
+                        >
+                            Socratica
+                        </a>
+                        ,{" "}
+                        <a
+                            href='https://www.instagram.com/60minutesofmusic'
+                            target='_blank'
+                            rel='noopener noreferrer'
+                            className='text-white underline hover:text-slate-300'
+                        >
+                            writing and producing music
+                        </a>
+                        , and staying active through running and rock climbing.
                     </p>
 
                     {/* Social Links */}

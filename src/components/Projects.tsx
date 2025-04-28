@@ -92,7 +92,7 @@ const projectsData = [
     },
 ];
 
-// Define the structure for position data
+// Stores the x,y coordinates for card positioning
 interface Position {
     x: number;
     y: number;
@@ -120,7 +120,7 @@ const Projects = () => {
     const selectedProject =
         selectedId !== null ? projectsData[selectedId] : null;
 
-    // --- Function to calculate grid cell positions (to be implemented) ---
+    // Calculates grid cell positions and offsets for the card layout
     const calculatePositions = useCallback(() => {
         if (!containerRef.current) return;
 
@@ -146,7 +146,7 @@ const Projects = () => {
         const offsetXPercentage = 0.5; // Allows +/- 50% of cell width
         const offsetYPercentage = 0.2; // Allows +/- 20% of cell width
 
-        // Helper function to check if a position maintains minimum margin with existing cards
+        // Determines if a card position maintains minimum margin with existing cards
         const isValidPosition = (
             basePos: Position,
             newOffset: Position,
@@ -260,7 +260,7 @@ const Projects = () => {
 
         setCardOffsets(newOffsets);
         setCardPositions(basePositions);
-    }, [projectsData.length]); // Dependency: length of projects
+    }, []);
 
     // Set mounted state after initial render on client
     useEffect(() => {
@@ -284,7 +284,7 @@ const Projects = () => {
         };
     }, [calculatePositions]);
 
-    // --- Component for rendering lines ---
+    // Renders a connecting line between two cards
     interface LineProps {
         start: Position;
         end: Position;
@@ -293,19 +293,19 @@ const Projects = () => {
         const dx = end.x - start.x;
         const dy = end.y - start.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
-        const angle = Math.atan2(dy, dx) * (180 / Math.PI); // angle in degrees
+        const angle = Math.atan2(dy, dx) * (180 / Math.PI);
 
         // Style for the line div
         const lineStyle: React.CSSProperties = {
             position: "absolute",
-            left: `${start.x}px`, // Start the line at the start point
+            left: `${start.x}px`,
             top: `${start.y}px`,
             width: `${distance}px`, // Length of the line
             height: "1px", // Thickness of the line
-            backgroundColor: "rgba(165, 243, 252, 0.4)", // Light cyan, semi-transparent
+            backgroundColor: "rgba(165, 243, 252, 0.4)",
             transformOrigin: "left center", // Rotate around the starting point
             transform: `rotate(${angle}deg)`,
-            zIndex: -1, // Ensure lines are behind cards if needed (though container is separate)
+            zIndex: -1, // Ensure lines are behind cards
             filter: "drop-shadow(0 0 3px rgba(165, 243, 252, 0.6))", // Glow effect
         };
 
@@ -341,7 +341,6 @@ const Projects = () => {
                 y: currentPos.y + currentOffset.y,
             };
 
-            const currentRow = Math.floor(i / cols);
             const currentCol = i % cols;
 
             // Connect horizontally (if not last in row)
@@ -378,13 +377,7 @@ const Projects = () => {
             }
         }
         return lines;
-    }, [
-        cardPositions,
-        cardOffsets,
-        gridInfo.cols,
-        projectsData.length,
-        // selectedId removed from dependencies, as it no longer affects line positions
-    ]);
+    }, [cardPositions, cardOffsets, gridInfo]);
 
     return (
         <>
@@ -432,9 +425,8 @@ const Projects = () => {
                                 transform: `translate(${
                                     cardOffsets[index]?.x || 0
                                 }px, ${cardOffsets[index]?.y || 0}px)`,
-                                // No transition needed on the wrapper's transform
-                                height: "100%", // Ensure wrapper takes full cell height for ref measurement
-                                width: "100%", // Ensure wrapper takes full cell width for ref measurement
+                                height: "100%",
+                                width: "100%",
                             }}
                         >
                             <ProjectCard
@@ -443,7 +435,6 @@ const Projects = () => {
                                 layoutId={`card-container-${index}`}
                                 onClick={() => setSelectedId(index)}
                                 className='max-w-sm mx-auto h-full'
-                                // offset prop removed
                                 isMounted={isMounted}
                                 isSelected={selectedId === index}
                             />

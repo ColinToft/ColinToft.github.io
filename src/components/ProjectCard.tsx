@@ -3,7 +3,9 @@
 import { motion } from "framer-motion";
 import { FiGithub, FiExternalLink } from "react-icons/fi";
 import { SVGProps, forwardRef } from "react";
+import Image from "next/image";
 
+// eslint-disable-next-line @typescript-eslint/no-empty-object-type
 interface CloseIconProps extends SVGProps<SVGSVGElement> {}
 
 const CloseIcon: React.FC<CloseIconProps> = (props) => (
@@ -57,13 +59,10 @@ const ProjectCard = forwardRef<HTMLDivElement, ProjectCardProps>(
             githubLink,
             liveLink,
             embedUrl,
-            index,
             layoutId,
             onClick,
             isExpanded = false,
             onClose,
-            isMounted,
-            isSelected,
             className = "",
         } = props;
 
@@ -112,11 +111,16 @@ const ProjectCard = forwardRef<HTMLDivElement, ProjectCardProps>(
                 {isExpanded && embedUrl && (
                     <motion.div className='my-4'>
                         {embedUrl.match(/\.(jpeg|jpg|gif|png|webp)$/i) ? (
-                            <img
-                                src={embedUrl}
-                                alt={`${title} preview`}
-                                className='w-full h-auto rounded object-contain max-h-96'
-                            />
+                            <div className='relative w-full h-auto max-h-96 aspect-video'>
+                                <Image
+                                    src={embedUrl}
+                                    alt={`${title} preview`}
+                                    fill={true}
+                                    style={{ objectFit: "contain" }}
+                                    className='rounded'
+                                    sizes='(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw'
+                                />
+                            </div>
                         ) : (
                             <div className='aspect-video'>
                                 <iframe

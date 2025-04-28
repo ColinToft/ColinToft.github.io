@@ -38,23 +38,23 @@ const About = () => {
                         About Me
                     </h2>
                     <p className='text-slate-100 text-lg mb-4 leading-relaxed font-semibold'>
-                        Hi, I'm Colin, a fourth-year computer science student at
-                        the University of Waterloo, passionate about building
-                        technology for social impact.
+                        Hi, I&apos;m Colin, a fourth-year computer science
+                        student at the University of Waterloo, passionate about
+                        building technology for social impact.
                     </p>
                     <p className='text-slate-100 text-lg mb-4 leading-relaxed'>
-                        Since I was young, I've loved uncovering how things
+                        Since I was young, I&apos;ve loved uncovering how things
                         work. That curiosity led me to software, where I could
                         explore systems and build my own. It also sparked a
                         fascination with compilers, the systems behind software
                         that translate it into machine instructions.
                     </p>
                     <p className='text-slate-100 text-lg mb-6 leading-relaxed'>
-                        Recently, I've been diving into AI interpretability and
-                        alignment, reading about how models operate and ways to
-                        ensure they act for humanity's benefit. This field
-                        connects my love of understanding complex systems with
-                        the ability to make a real-world difference.
+                        Recently, I&apos;ve been diving into AI interpretability
+                        and alignment, reading about how models operate and ways
+                        to ensure they act for humanity&apos;s benefit. This
+                        field connects my love of understanding complex systems
+                        with the ability to make a real-world difference.
                     </p>
                     <p className='text-slate-100 text-lg mb-6 leading-relaxed'>
                         Outside of school and internships, you can find me

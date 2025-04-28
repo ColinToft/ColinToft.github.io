@@ -2,9 +2,9 @@
 
 import { useState, useRef, Suspense, useMemo } from "react";
 import { Canvas, useFrame } from "@react-three/fiber";
-import { Points, PointMaterial, Preload } from "@react-three/drei";
+import { Points, Preload } from "@react-three/drei";
 import * as THREE from "three";
-// @ts-ignore
+// @ts-expect-error - no types
 import * as random from "maath/random/dist/maath-random.esm";
 import {
     useBackgroundStore,
@@ -110,7 +110,8 @@ function fromSphericalShell(
     return buffer;
 }
 
-function Stars(props: any) {
+// eslint-disable-next-line
+function Stars() {
     const ref = useRef<THREE.Points>(null);
     const [sphere] = useState(() =>
         fromSphericalShell(new Float32Array(3000 * 3), {
@@ -149,13 +150,7 @@ function Stars(props: any) {
 
     return (
         <group rotation={[0.3, 0, 0]}>
-            <Points
-                ref={ref}
-                positions={sphere}
-                stride={3}
-                frustumCulled
-                {...props}
-            >
+            <Points ref={ref} positions={sphere} stride={3} frustumCulled>
                 <shaderMaterial
                     uniforms={uniforms}
                     vertexShader={vertexShader}

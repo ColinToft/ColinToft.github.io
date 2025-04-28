@@ -49,7 +49,7 @@ const Ticker: React.FC<TickerProps> = ({
             if (prevChar === " " && goalChar === " ") return " ";
 
             let goalCharCode = goalChar.charCodeAt(0) - 32;
-            let prevCharCode = prevChar.charCodeAt(0) - 32;
+            const prevCharCode = prevChar.charCodeAt(0) - 32;
 
             while (goalCharCode - 20 < prevCharCode) {
                 goalCharCode += 126 - 32;

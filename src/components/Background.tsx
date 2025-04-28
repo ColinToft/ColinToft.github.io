@@ -110,7 +110,6 @@ function fromSphericalShell(
     return buffer;
 }
 
-// eslint-disable-next-line
 function Stars() {
     const ref = useRef<THREE.Points>(null);
     const [sphere] = useState(() =>

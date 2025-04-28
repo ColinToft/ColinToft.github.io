@@ -392,15 +392,55 @@ const Projects = () => {
                         x: rightCardInfo.x + rightOffset.x,
                         y: rightCardInfo.y + rightOffset.y,
                     };
-                    // Calculate edge points for horizontal connection using individual widths
-                    const startEdge: Position = {
-                        x: startPosCenter.x + currentCardInfo.width / 2, // Use current card width
-                        y: startPosCenter.y,
-                    };
-                    const endEdge: Position = {
-                        x: endPosCenter.x - rightCardInfo.width / 2, // Use right card width
-                        y: endPosCenter.y,
-                    };
+
+                    // Calculate intersection points for horizontal connection
+                    const dxH = endPosCenter.x - startPosCenter.x;
+                    const dyH = endPosCenter.y - startPosCenter.y;
+
+                    let startEdge: Position;
+                    let endEdge: Position;
+
+                    // Avoid division by zero if centers are vertically aligned
+                    if (dxH === 0) {
+                        startEdge = {
+                            x: startPosCenter.x + currentCardInfo.width / 2,
+                            y: startPosCenter.y,
+                        };
+                        endEdge = {
+                            x: endPosCenter.x - rightCardInfo.width / 2,
+                            y: endPosCenter.y,
+                        };
+                    } else {
+                        // Calculate t for intersection with start card's right edge
+                        const tStart = currentCardInfo.width / 2 / dxH;
+                        startEdge = {
+                            x: startPosCenter.x + currentCardInfo.width / 2,
+                            y: startPosCenter.y + tStart * dyH,
+                        };
+
+                        // Calculate t for intersection with end card's left edge
+                        const tEnd = (dxH - rightCardInfo.width / 2) / dxH;
+                        endEdge = {
+                            x: endPosCenter.x - rightCardInfo.width / 2,
+                            y: startPosCenter.y + tEnd * dyH, // Use startPosCenter.y as reference
+                        };
+                    }
+                    // Clamp y-coordinates to card boundaries to prevent lines going outside
+                    startEdge.y = Math.max(
+                        startPosCenter.y - currentCardInfo.height / 2,
+                        Math.min(
+                            startPosCenter.y + currentCardInfo.height / 2,
+                            startEdge.y
+                        )
+                    );
+                    endEdge.y = Math.max(
+                        endPosCenter.y - rightCardInfo.height / 2,
+                        Math.min(
+                            endPosCenter.y + rightCardInfo.height / 2,
+                            endEdge.y
+                        )
+                    );
+
                     lines.push({ start: startEdge, end: endEdge });
                 }
             }
@@ -416,15 +456,56 @@ const Projects = () => {
                         x: belowCardInfo.x + belowOffset.x,
                         y: belowCardInfo.y + belowOffset.y,
                     };
-                    // Calculate edge points for vertical connection using individual heights
-                    const startEdge: Position = {
-                        x: startPosCenter.x,
-                        y: startPosCenter.y + currentCardInfo.height / 2, // Use current card height
-                    };
-                    const endEdge: Position = {
-                        x: endPosCenter.x,
-                        y: endPosCenter.y - belowCardInfo.height / 2, // Use below card height
-                    };
+
+                    // Calculate intersection points for vertical connection
+                    const dxV = endPosCenter.x - startPosCenter.x;
+                    const dyV = endPosCenter.y - startPosCenter.y;
+
+                    let startEdge: Position;
+                    let endEdge: Position;
+
+                    // Avoid division by zero if centers are horizontally aligned
+                    if (dyV === 0) {
+                        startEdge = {
+                            x: startPosCenter.x,
+                            y: startPosCenter.y + currentCardInfo.height / 2,
+                        };
+                        endEdge = {
+                            x: endPosCenter.x,
+                            y: endPosCenter.y - belowCardInfo.height / 2,
+                        };
+                    } else {
+                        // Calculate t for intersection with start card's bottom edge
+                        const tStart = currentCardInfo.height / 2 / dyV;
+                        startEdge = {
+                            x: startPosCenter.x + tStart * dxV,
+                            y: startPosCenter.y + currentCardInfo.height / 2,
+                        };
+
+                        // Calculate t for intersection with end card's top edge
+                        const tEnd = (dyV - belowCardInfo.height / 2) / dyV;
+                        endEdge = {
+                            x: startPosCenter.x + tEnd * dxV, // Use startPosCenter.x as reference
+                            y: endPosCenter.y - belowCardInfo.height / 2,
+                        };
+                    }
+
+                    // Clamp x-coordinates to card boundaries
+                    startEdge.x = Math.max(
+                        startPosCenter.x - currentCardInfo.width / 2,
+                        Math.min(
+                            startPosCenter.x + currentCardInfo.width / 2,
+                            startEdge.x
+                        )
+                    );
+                    endEdge.x = Math.max(
+                        endPosCenter.x - belowCardInfo.width / 2,
+                        Math.min(
+                            endPosCenter.x + belowCardInfo.width / 2,
+                            endEdge.x
+                        )
+                    );
+
                     lines.push({ start: startEdge, end: endEdge });
                 }
             }

@@ -332,9 +332,8 @@ const Projects = () => {
 
         for (let i = 0; i < projectsData.length; i++) {
             const currentPos = cardPositions[i];
-            // Apply offset unless this is the selected card
-            const currentOffset =
-                selectedId === i ? { x: 0, y: 0 } : cardOffsets[i];
+            // ALWAYS use the calculated offset, regardless of selection
+            const currentOffset = cardOffsets[i];
             if (!currentPos || !currentOffset) continue;
 
             const startPos: Position = {
@@ -352,11 +351,8 @@ const Projects = () => {
                 rightNeighborIndex < projectsData.length
             ) {
                 const rightPos = cardPositions[rightNeighborIndex];
-                // Apply offset unless this is the selected card
-                const rightOffset =
-                    selectedId === rightNeighborIndex
-                        ? { x: 0, y: 0 }
-                        : cardOffsets[rightNeighborIndex];
+                // ALWAYS use the calculated offset for the neighbor
+                const rightOffset = cardOffsets[rightNeighborIndex];
                 if (rightPos && rightOffset) {
                     const endPos: Position = {
                         x: rightPos.x + rightOffset.x,
@@ -370,11 +366,8 @@ const Projects = () => {
             const belowNeighborIndex = i + cols;
             if (belowNeighborIndex < projectsData.length) {
                 const belowPos = cardPositions[belowNeighborIndex];
-                // Apply offset unless this is the selected card
-                const belowOffset =
-                    selectedId === belowNeighborIndex
-                        ? { x: 0, y: 0 }
-                        : cardOffsets[belowNeighborIndex];
+                // ALWAYS use the calculated offset for the neighbor
+                const belowOffset = cardOffsets[belowNeighborIndex];
                 if (belowPos && belowOffset) {
                     const endPos: Position = {
                         x: belowPos.x + belowOffset.x,
@@ -390,8 +383,8 @@ const Projects = () => {
         cardOffsets,
         gridInfo.cols,
         projectsData.length,
-        selectedId,
-    ]); // Add selectedId to dependencies
+        // selectedId removed from dependencies, as it no longer affects line positions
+    ]);
 
     return (
         <>

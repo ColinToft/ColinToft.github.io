@@ -172,9 +172,9 @@ const nightColors = {
 };
 
 const dawnColors = {
-    top: new THREE.Color("#202e46"),
-    middle: new THREE.Color("#344569"),
-    bottom: new THREE.Color("#5d5173"),
+    top: new THREE.Color("#101a29"),
+    middle: new THREE.Color("#1a2b58"),
+    bottom: new THREE.Color("#243c87"),
 };
 
 const BackgroundCanvas = () => {

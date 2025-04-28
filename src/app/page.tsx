@@ -43,6 +43,11 @@ export default function Home() {
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [brightness, starVisibility]); // Rerun effect if motion values change
 
+    // Effect to scroll to top on mount
+    useEffect(() => {
+        window.scrollTo(0, 0);
+    }, []);
+
     return (
         <main className='flex min-h-screen flex-col items-center justify-between relative z-10'>
             <Hero />

@@ -138,7 +138,7 @@ const ProjectCard = forwardRef<HTMLDivElement, ProjectCardProps>(
 
                 <motion.div
                     transition={{ delay: isExpanded ? 0.1 : 0.05 }}
-                    className='flex justify-between items-center mt-auto pt-4 border-t border-slate-700/50'
+                    className='flex justify-between items-center mt-auto pt-4 border-t border-cyan-200/30'
                 >
                     <span className='text-xs text-slate-500'>{date}</span>
                     <div className='flex space-x-4'>
@@ -173,9 +173,9 @@ const ProjectCard = forwardRef<HTMLDivElement, ProjectCardProps>(
 
         const baseClasses = "p-6 rounded-lg flex flex-col relative h-full";
         const gridCardClasses =
-            "bg-slate-800/90 shadow-lg border border-slate-700/50 hover:bg-slate-800/90 transition-colors";
+            "bg-black/10 backdrop-blur-sm shadow-lg border border-cyan-200/60 hover:bg-black/20";
         const expandedCardClasses =
-            "bg-slate-800/95 shadow-xl border border-slate-700/50 max-w-2xl w-full";
+            "bg-slate-900/80 backdrop-blur-md shadow-xl border border-cyan-200/60 max-w-2xl w-full";
 
         if (isExpanded) {
             return (
@@ -195,7 +195,6 @@ const ProjectCard = forwardRef<HTMLDivElement, ProjectCardProps>(
                 onClick={onClick}
                 className={`${baseClasses} ${gridCardClasses} ${className} cursor-pointer`}
                 layoutId={layoutId}
-                layout
             >
                 {cardContent}
             </motion.div>

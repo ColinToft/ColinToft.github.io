@@ -428,22 +428,20 @@ const Projects = () => {
                     </div>
 
                     {projectsData.map((project, index) => (
-                        // Wrapper div to attach ref for position calculation
+                        // Wrapper div holds ref and ALWAYS applies the offset via transform
                         <div
-                            key={`card-wrapper-${index}`}
+                            key={`project-wrapper-${index}`}
                             ref={(el) => {
                                 cardRefs.current[index] = el;
                             }}
-                            className='max-w-sm mx-auto h-auto'
                             style={{
-                                // Keep offset on non-selected cards, remove it only from the selected card
-                                transform:
-                                    isMounted &&
-                                    (selectedId === null ||
-                                        selectedId !== index)
-                                        ? `translate(${cardOffsets[index]?.x}px, ${cardOffsets[index]?.y}px)`
-                                        : "none",
-                                transition: "transform 0.3s ease-out", // Smooth transition for offset
+                                // Position is handled by the grid layout itself
+                                transform: `translate(${
+                                    cardOffsets[index]?.x || 0
+                                }px, ${cardOffsets[index]?.y || 0}px)`,
+                                // No transition needed on the wrapper's transform
+                                height: "100%", // Ensure wrapper takes full cell height for ref measurement
+                                width: "100%", // Ensure wrapper takes full cell width for ref measurement
                             }}
                         >
                             <ProjectCard
@@ -451,7 +449,10 @@ const Projects = () => {
                                 index={index}
                                 layoutId={`card-container-${index}`}
                                 onClick={() => setSelectedId(index)}
-                                // No direct style prop needed on ProjectCard itself now
+                                className='max-w-sm mx-auto h-full'
+                                // offset prop removed
+                                isMounted={isMounted}
+                                isSelected={selectedId === index}
                             />
                         </div>
                     ))}

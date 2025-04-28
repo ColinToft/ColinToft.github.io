@@ -92,39 +92,53 @@ const projectsData = [
     },
 ];
 
-// Stores the x,y coordinates for card positioning
+// --- Define Decorative Stars ---
+const numStars = Math.round(projectsData.length * 0.9);
+const starsData = Array.from({ length: numStars }, (_, i) => ({
+    id: projectsData.length + i,
+    type: "star" as const,
+}));
+
+const constellationData = [
+    ...projectsData.map((p, index) => ({
+        ...p,
+        type: "project" as const,
+        id: index,
+    })),
+    ...starsData,
+];
+
 interface Position {
     x: number;
     y: number;
 }
 
-// Stores card center position and dimensions
 interface CardInfo extends Position {
+    width: number;
+    height: number;
+    id: number;
+    type: "project";
+}
+
+interface StarInfo extends Position {
+    id: number;
+    type: "star";
     width: number;
     height: number;
 }
 
+type ConstellationItemBase = { id: number; type: "project" | "star" };
+type ConstellationItem = (CardInfo | StarInfo) & ConstellationItemBase;
+
 const Projects = () => {
     const [selectedId, setSelectedId] = useState<number | null>(null);
     const [isMounted, setIsMounted] = useState(false);
-    // Ref for the grid container
     const containerRef = useRef<HTMLDivElement>(null);
-    // Refs for individual card elements (or wrappers)
     const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
-    // State to store calculated center positions and dimensions of cards
-    const [cardPositions, setCardPositions] = useState<CardInfo[]>([]);
-    // State for grid columns and dimensions (removed cardWidth, cardHeight)
-    const [gridInfo, setGridInfo] = useState({
-        cols: 3,
-        width: 0,
-        height: 0,
-        // cardWidth: 0, // Removed
-        // cardHeight: 0, // Removed
-    });
-    // State for dynamic offsets
-    const [cardOffsets, setCardOffsets] = useState<Position[]>([]);
+    const [itemPositions, setItemPositions] = useState<ConstellationItem[]>([]);
+    const [containerMinHeight, setContainerMinHeight] = useState("800px");
+    const [positionsReady, setPositionsReady] = useState(false);
 
-    // Ensure cardRefs array has the correct size
     useEffect(() => {
         cardRefs.current = cardRefs.current.slice(0, projectsData.length);
     }, []);
@@ -132,86 +146,15 @@ const Projects = () => {
     const selectedProject =
         selectedId !== null ? projectsData[selectedId] : null;
 
-    // Calculates grid cell positions and offsets for the card layout
     const calculatePositions = useCallback(() => {
         if (!containerRef.current) return;
 
         const container = containerRef.current;
+        const containerRect = container.getBoundingClientRect();
         const containerWidth = container.offsetWidth;
+        let currentTargetHeight = Math.max(container.offsetHeight, 800);
+        const initialContainerHeight = currentTargetHeight;
 
-        // Determine columns based on Tailwind breakpoints (approximate)
-        let cols = 1;
-        if (containerWidth >= 1024) {
-            // lg
-            cols = 2; // Change from 3 to 2 for lg breakpoint
-        } else if (containerWidth >= 768) {
-            // md
-            cols = 2;
-        }
-        setGridInfo({
-            cols,
-            width: containerWidth,
-            height: container.offsetHeight,
-            // cardWidth: 0, // Removed
-            // cardHeight: 0, // Removed
-        });
-
-        const minMargin = 50; // Minimum margin between cards in pixels
-        const offsetXPercentage = 0.5; // Allows +/- 50% of cell width
-        const offsetYPercentage = 0.2; // Allows +/- 20% of cell width
-
-        // Determines if a card position maintains minimum margin with existing cards
-        const isValidPosition = (
-            basePos: CardInfo, // Changed from Position to CardInfo
-            newOffset: Position,
-            existingPositions: { basePos: CardInfo; offset: Position }[] // Changed from Position to CardInfo
-            // cardRect: DOMRect // Removed - use individual dimensions
-        ): boolean => {
-            // Calculate the boundaries of the new card using its specific dimensions
-            const newLeft = basePos.x + newOffset.x - basePos.width / 2;
-            const newRight = basePos.x + newOffset.x + basePos.width / 2;
-            const newTop = basePos.y + newOffset.y - basePos.height / 2;
-            const newBottom = basePos.y + newOffset.y + basePos.height / 2;
-
-            // Check against all existing card positions
-            return existingPositions.every(
-                ({ basePos: existingBase, offset: existingOffset }) => {
-                    // Calculate the boundaries of the existing card using its specific dimensions
-                    const existingLeft =
-                        existingBase.x +
-                        existingOffset.x -
-                        existingBase.width / 2;
-                    const existingRight =
-                        existingBase.x +
-                        existingOffset.x +
-                        existingBase.width / 2;
-                    const existingTop =
-                        existingBase.y +
-                        existingOffset.y -
-                        existingBase.height / 2;
-                    const existingBottom =
-                        existingBase.y +
-                        existingOffset.y +
-                        existingBase.height / 2;
-
-                    // Check if the cards are too close horizontally or vertically
-                    const horizontalOverlap = !(
-                        newRight + minMargin < existingLeft ||
-                        newLeft > existingRight + minMargin
-                    );
-                    const verticalOverlap = !(
-                        newBottom + minMargin < existingTop ||
-                        newTop > existingBottom + minMargin
-                    );
-
-                    // Return true if there's enough margin (no overlap considering minMargin)
-                    return !(horizontalOverlap && verticalOverlap);
-                }
-            );
-        };
-
-        // Generate new offsets with collision avoidance
-        const newOffsets: Position[] = [];
         const cardElements = cardRefs.current.filter(
             (ref) => ref !== null
         ) as HTMLDivElement[];
@@ -220,303 +163,466 @@ const Projects = () => {
             cardElements.length === 0 ||
             cardElements.length !== projectsData.length
         ) {
-            // If we don't have refs yet, wait for next render
-            setCardOffsets([]);
-            setCardPositions([]);
             return;
         }
 
-        // Get the first card's dimensions to use as reference
-        // const cardRect = cardElements[0].getBoundingClientRect(); // Removed - calculate per card
-        const containerRect = container.getBoundingClientRect();
-
-        // Calculate base positions AND dimensions from actual card elements
-        const basePositions: CardInfo[] = cardElements.map((card) => {
-            // Changed to CardInfo[]
-            const rect = card.getBoundingClientRect();
-            return {
-                x: rect.left - containerRect.left + rect.width / 2,
-                y: rect.top - containerRect.top + rect.height / 2,
-                width: rect.width, // Store width
-                height: rect.height, // Store height
-            };
+        const itemDimensions = constellationData.map((item, index) => {
+            if (item.type === "project") {
+                const cardElement = cardElements[item.id];
+                if (!cardElement) {
+                    console.error(`Missing ref for project ID ${item.id}`);
+                    return {
+                        id: item.id,
+                        type: item.type,
+                        width: 0,
+                        height: 0,
+                    };
+                }
+                const rect = cardElement.getBoundingClientRect();
+                if (rect.width === 0 || rect.height === 0) {
+                    console.warn(
+                        `Card ${index} has zero dimensions initially.`
+                    );
+                }
+                return {
+                    id: item.id,
+                    type: item.type,
+                    width: rect.width,
+                    height: rect.height,
+                };
+            } else {
+                const starSize = 20;
+                return {
+                    id: item.id,
+                    type: item.type,
+                    width: starSize,
+                    height: starSize,
+                };
+            }
         });
 
-        // Update grid info with card dimensions
-        // setGridInfo((prev) => ({ // Removed - dimensions stored in cardPositions now
-        //     ...prev,
-        //     cardWidth: cardRect.width,
-        //     cardHeight: cardRect.height,
-        // }));
+        const minMargin = 100;
+        const maxAttemptsPerCard = 1500;
+        const maxExpansionAttempts = 5;
+        const edgePadding = 50;
 
-        // Generate offsets with collision avoidance
-        for (let i = 0; i < projectsData.length; i++) {
-            const basePos = basePositions[i];
-            let validOffsetFound = false;
-            let attempts = 0;
-            const maxAttempts = 50;
-
-            while (!validOffsetFound && attempts < maxAttempts) {
-                const candidateOffset = {
-                    x:
-                        (((Math.random() - 0.5) * containerWidth) / cols) *
-                        offsetXPercentage,
-                    y:
-                        (((Math.random() - 0.5) * containerWidth) / cols) *
-                        offsetYPercentage,
-                };
-
-                if (
-                    isValidPosition(
-                        basePos,
-                        candidateOffset,
-                        basePositions.slice(0, i).map((pos, idx) => ({
-                            basePos: pos,
-                            offset: newOffsets[idx],
-                        }))
-                        // cardRect // Removed
-                    )
-                ) {
-                    newOffsets.push(candidateOffset);
-                    validOffsetFound = true;
-                }
-
-                attempts++;
+        const isValidPosition = (
+            newItem: ConstellationItem,
+            existingItems: ConstellationItem[],
+            currentWidth: number,
+            currentHeight: number
+        ): boolean => {
+            const newHalfWidth = newItem.width / 2;
+            const newHalfHeight = newItem.height / 2;
+            if (
+                newItem.x - newHalfWidth < edgePadding ||
+                newItem.x + newHalfWidth > currentWidth - edgePadding ||
+                newItem.y - newHalfHeight < edgePadding ||
+                newItem.y + newHalfHeight > currentHeight - edgePadding
+            ) {
+                return false;
             }
 
-            // If no valid position found after max attempts, use minimal offset
-            if (!validOffsetFound) {
-                newOffsets.push({ x: 0, y: 0 });
+            const margin = minMargin / 2;
+            const newLeft = newItem.x - newHalfWidth - margin;
+            const newRight = newItem.x + newHalfWidth + margin;
+            const newTop = newItem.y - newHalfHeight - margin;
+            const newBottom = newItem.y + newHalfHeight + margin;
+
+            return existingItems.every((existingItem) => {
+                const existingHalfWidth = existingItem.width / 2;
+                const existingHalfHeight = existingItem.height / 2;
+                const existingLeft = existingItem.x - existingHalfWidth;
+                const existingRight = existingItem.x + existingHalfWidth;
+                const existingTop = existingItem.y - existingHalfHeight;
+                const existingBottom = existingItem.y + existingHalfHeight;
+
+                const noOverlap =
+                    newLeft >= existingRight ||
+                    newRight <= existingLeft ||
+                    newTop >= existingBottom ||
+                    newBottom <= existingTop;
+
+                return noOverlap;
+            });
+        };
+
+        const finalPositions: ConstellationItem[] = [];
+        let overallPlacementAttempts = 0;
+        const maxOverallPlacementAttempts =
+            constellationData.length *
+            maxAttemptsPerCard *
+            maxExpansionAttempts;
+
+        for (let i = 0; i < constellationData.length; i++) {
+            const dimensions = itemDimensions[i];
+            if (
+                !dimensions ||
+                (dimensions.type === "project" &&
+                    (dimensions.width === 0 || dimensions.height === 0))
+            ) {
+                continue;
+            }
+
+            let validPositionFound = false;
+            let cardPlacementAttempts = 0;
+            let expansionAttempts = 0;
+
+            while (
+                !validPositionFound &&
+                expansionAttempts < maxExpansionAttempts &&
+                overallPlacementAttempts < maxOverallPlacementAttempts
+            ) {
+                cardPlacementAttempts = 0;
+                while (
+                    !validPositionFound &&
+                    cardPlacementAttempts < maxAttemptsPerCard
+                ) {
+                    overallPlacementAttempts++;
+                    const candidatePos: ConstellationItem = {
+                        x:
+                            edgePadding +
+                            dimensions.width / 2 +
+                            Math.random() *
+                                (containerWidth -
+                                    2 * edgePadding -
+                                    dimensions.width),
+                        y:
+                            edgePadding +
+                            dimensions.height / 2 +
+                            Math.random() *
+                                Math.max(
+                                    0,
+                                    currentTargetHeight -
+                                        2 * edgePadding -
+                                        dimensions.height
+                                ),
+                        width: dimensions.width,
+                        height: dimensions.height,
+                        id: dimensions.id,
+                        type: dimensions.type,
+                    };
+
+                    if (
+                        isValidPosition(
+                            candidatePos,
+                            finalPositions,
+                            containerWidth,
+                            currentTargetHeight
+                        )
+                    ) {
+                        finalPositions.push(candidatePos);
+                        validPositionFound = true;
+                        currentTargetHeight = Math.max(
+                            currentTargetHeight,
+                            candidatePos.y +
+                                candidatePos.height / 2 +
+                                edgePadding
+                        );
+                    }
+                    cardPlacementAttempts++;
+                }
+
+                if (
+                    !validPositionFound &&
+                    expansionAttempts < maxExpansionAttempts
+                ) {
+                    expansionAttempts++;
+                    const heightIncrease = dimensions.height + minMargin;
+                    currentTargetHeight += heightIncrease;
+                }
+            }
+
+            if (!validPositionFound) {
+                const fallbackPos: ConstellationItem = {
+                    x: containerWidth / 2 + (Math.random() - 0.5) * 50,
+                    y:
+                        currentTargetHeight -
+                        dimensions.height / 2 -
+                        edgePadding,
+                    width: dimensions.width,
+                    height: dimensions.height,
+                    id: dimensions.id,
+                    type: dimensions.type,
+                };
+                if (
+                    isValidPosition(
+                        fallbackPos,
+                        finalPositions,
+                        containerWidth,
+                        currentTargetHeight
+                    )
+                ) {
+                    finalPositions.push(fallbackPos);
+                    currentTargetHeight = Math.max(
+                        currentTargetHeight,
+                        fallbackPos.y + fallbackPos.height / 2 + edgePadding
+                    );
+                } else {
+                    finalPositions.push(fallbackPos);
+                    currentTargetHeight = Math.max(
+                        currentTargetHeight,
+                        fallbackPos.y + fallbackPos.height / 2 + edgePadding
+                    );
+                }
             }
         }
 
-        setCardOffsets(newOffsets);
-        setCardPositions(basePositions);
-    }, []);
+        let yOffset = 0;
+        if (finalPositions.length > 0) {
+            const minY = Math.min(
+                ...finalPositions.map((p) => p.y - p.height / 2)
+            );
+            yOffset = Math.max(0, minY - edgePadding);
 
-    // Set mounted state after initial render on client
+            if (yOffset > 0) {
+                console.log(
+                    `Shifting constellation up by ${yOffset.toFixed(1)}px`
+                );
+                finalPositions.forEach((p) => {
+                    p.y -= yOffset;
+                });
+            }
+        }
+
+        let finalCalculatedMinHeight = 800;
+        if (finalPositions.length > 0) {
+            const maxY = Math.max(
+                ...finalPositions.map((p) => p.y + p.height / 2)
+            );
+            finalCalculatedMinHeight = maxY + edgePadding;
+            finalCalculatedMinHeight = Math.max(
+                finalCalculatedMinHeight,
+                initialContainerHeight,
+                800
+            );
+        }
+
+        setContainerMinHeight(`${finalCalculatedMinHeight}px`);
+        setItemPositions(finalPositions);
+        setPositionsReady(true);
+
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [constellationData.length]);
+
     useEffect(() => {
         setIsMounted(true);
     }, []);
 
-    // Run position calculation on mount and resize
+    // Effect for initial calculation after mount + delay
     useEffect(() => {
-        calculatePositions(); // Initial calculation
+        if (!isMounted) return; // Wait until mounted
 
-        const resizeObserver = new ResizeObserver(() => {
-            calculatePositions(); // Recalculate on resize
-        });
-
-        if (containerRef.current) {
-            resizeObserver.observe(containerRef.current);
-        }
+        // Schedule the first calculation after a delay
+        const initialTimer = setTimeout(() => {
+            console.log("Running initial position calculation...");
+            setPositionsReady(false); // Ensure false before starting
+            calculatePositions();
+        }, 300); // Increased delay (e.g., 300ms)
 
         return () => {
-            resizeObserver.disconnect(); // Cleanup observer
-        };
-    }, [calculatePositions]);
+            console.log("Cleaning up initial calculation timer.");
+            clearTimeout(initialTimer);
+        }; // Cleanup timer
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [isMounted]); // Rerun only if isMounted changes (effectively runs once after mount)
 
-    // Renders a connecting line between two cards
+    // Effect for handling resize
+    useEffect(() => {
+        if (!containerRef.current) return; // Need container ref
+
+        const handleResize = () => {
+            console.log("Resize detected, scheduling recalculation...");
+            setPositionsReady(false); // Reset on resize start
+            clearTimeout((window as any).__resizeTimeout);
+            (window as any).__resizeTimeout = setTimeout(() => {
+                console.log("Running resize position calculation...");
+                calculatePositions(); // Recalculate after debounce
+            }, 200);
+        };
+
+        const resizeObserver = new ResizeObserver(handleResize);
+        resizeObserver.observe(containerRef.current);
+
+        return () => {
+            console.log("Cleaning up resize observer and timer.");
+            clearTimeout((window as any).__resizeTimeout); // Cleanup resize timer
+            resizeObserver.disconnect();
+        };
+    }, [calculatePositions]); // Keep dependency on calculatePositions
+
     interface LineProps {
         start: Position;
         end: Position;
     }
+
     const Line: React.FC<LineProps> = ({ start, end }) => {
         const dx = end.x - start.x;
         const dy = end.y - start.y;
         const distance = Math.sqrt(dx * dx + dy * dy);
         const angle = Math.atan2(dy, dx) * (180 / Math.PI);
 
-        // Style for the line div
         const lineStyle: React.CSSProperties = {
             position: "absolute",
             left: `${start.x}px`,
             top: `${start.y}px`,
             width: `${distance}px`,
             height: "1px",
-            backgroundColor: "rgba(165, 243, 252, 0.4)",
-            transformOrigin: "left center",
-            transform: `rotate(${angle}deg) translateY(-50%)`, // Added translateY to center the line
-            zIndex: -1,
+            backgroundColor: "rgba(165, 243, 252, 0.3)",
             filter: "drop-shadow(0 0 3px rgba(165, 243, 252, 0.6))",
+            transformOrigin: "left center",
+            transform: `rotate(${angle}deg)`,
+            zIndex: -1,
         };
 
         return <div style={lineStyle} />;
     };
 
-    // --- Logic to determine which lines to draw ---
+    const StarNode: React.FC<{
+        position: Position;
+        size: number;
+        isReady: boolean;
+    }> = ({ position, size, isReady }) => {
+        const starStyle: React.CSSProperties = {
+            position: "absolute",
+            left: `${position.x}px`,
+            top: `${position.y}px`,
+            width: `${size}px`,
+            height: `${size}px`,
+            backgroundColor: "rgba(255, 255, 255, 0.8)",
+            borderRadius: "50%",
+            boxShadow: "0 0 8px 2px rgba(255, 255, 255, 0.7)",
+            transform: "translate(-50%, -50%)",
+            opacity: isReady ? 1 : 0,
+            transition: "opacity 0.6s ease-out",
+            zIndex: 0,
+        };
+        return <div style={starStyle} />;
+    };
+
     const linesToDraw = useMemo(() => {
-        const lines: LineProps[] = [];
-        // Ensure both positions and offsets are calculated
-        if (
-            cardPositions.length === 0 ||
-            cardOffsets.length === 0 ||
-            gridInfo.cols === 0
-        )
-            return lines;
-        if (
-            cardPositions.length !== cardOffsets.length ||
-            cardPositions.length !== projectsData.length
-            // gridInfo.cardWidth === 0 || // Removed checks
-            // gridInfo.cardHeight === 0
-        )
-            return lines;
+        const lines: {
+            start: Position;
+            end: Position;
+            connectionKey: string;
+        }[] = [];
+        if (itemPositions.length < 2) return lines;
 
-        // const { cols, cardWidth, cardHeight } = gridInfo; // Removed cardWidth, cardHeight
-        const { cols } = gridInfo;
+        const numNeighbors = 1;
+        const drawnConnections = new Set<string>();
 
-        for (let i = 0; i < projectsData.length; i++) {
-            const currentCardInfo = cardPositions[i]; // Now contains dimensions
-            // ALWAYS use the calculated offset, regardless of selection
-            const currentOffset = cardOffsets[i];
-            if (!currentCardInfo || !currentOffset) continue;
+        for (let i = 0; i < itemPositions.length; i++) {
+            const currentItem = itemPositions[i];
 
-            const startPosCenter: Position = {
-                x: currentCardInfo.x + currentOffset.x,
-                y: currentCardInfo.y + currentOffset.y,
-            };
-
-            const currentCol = i % cols;
-
-            // Connect horizontally (if not last in row)
-            const rightNeighborIndex = i + 1;
-            if (
-                currentCol < cols - 1 &&
-                rightNeighborIndex < projectsData.length
-            ) {
-                const rightCardInfo = cardPositions[rightNeighborIndex]; // Now contains dimensions
-                // ALWAYS use the calculated offset for the neighbor
-                const rightOffset = cardOffsets[rightNeighborIndex];
-                if (rightCardInfo && rightOffset) {
-                    const endPosCenter: Position = {
-                        x: rightCardInfo.x + rightOffset.x,
-                        y: rightCardInfo.y + rightOffset.y,
-                    };
-
-                    // Calculate intersection points for horizontal connection
-                    const dxH = endPosCenter.x - startPosCenter.x;
-                    const dyH = endPosCenter.y - startPosCenter.y;
-
-                    let startEdge: Position;
-                    let endEdge: Position;
-
-                    // Avoid division by zero if centers are vertically aligned
-                    if (dxH === 0) {
-                        startEdge = {
-                            x: startPosCenter.x + currentCardInfo.width / 2,
-                            y: startPosCenter.y,
-                        };
-                        endEdge = {
-                            x: endPosCenter.x - rightCardInfo.width / 2,
-                            y: endPosCenter.y,
-                        };
-                    } else {
-                        // Calculate t for intersection with start card's right edge
-                        const tStart = currentCardInfo.width / 2 / dxH;
-                        startEdge = {
-                            x: startPosCenter.x + currentCardInfo.width / 2,
-                            y: startPosCenter.y + tStart * dyH,
-                        };
-
-                        // Calculate t for intersection with end card's left edge
-                        const tEnd = (dxH - rightCardInfo.width / 2) / dxH;
-                        endEdge = {
-                            x: endPosCenter.x - rightCardInfo.width / 2,
-                            y: startPosCenter.y + tEnd * dyH, // Use startPosCenter.y as reference
-                        };
-                    }
-                    // Clamp y-coordinates to card boundaries to prevent lines going outside
-                    startEdge.y = Math.max(
-                        startPosCenter.y - currentCardInfo.height / 2,
-                        Math.min(
-                            startPosCenter.y + currentCardInfo.height / 2,
-                            startEdge.y
-                        )
-                    );
-                    endEdge.y = Math.max(
-                        endPosCenter.y - rightCardInfo.height / 2,
-                        Math.min(
-                            endPosCenter.y + rightCardInfo.height / 2,
-                            endEdge.y
-                        )
-                    );
-
-                    lines.push({ start: startEdge, end: endEdge });
-                }
+            const neighbors = [];
+            for (let j = 0; j < itemPositions.length; j++) {
+                if (i === j) continue;
+                const otherItem = itemPositions[j];
+                neighbors.push({
+                    index: j,
+                    distance: Math.sqrt(
+                        (otherItem.x - currentItem.x) ** 2 +
+                            (otherItem.y - currentItem.y) ** 2
+                    ),
+                });
             }
 
-            // Connect vertically (if not last row)
-            const belowNeighborIndex = i + cols;
-            if (belowNeighborIndex < projectsData.length) {
-                const belowCardInfo = cardPositions[belowNeighborIndex]; // Now contains dimensions
-                // ALWAYS use the calculated offset for the neighbor
-                const belowOffset = cardOffsets[belowNeighborIndex];
-                if (belowCardInfo && belowOffset) {
-                    const endPosCenter: Position = {
-                        x: belowCardInfo.x + belowOffset.x,
-                        y: belowCardInfo.y + belowOffset.y,
-                    };
+            neighbors.sort((a, b) => a.distance - b.distance);
 
-                    // Calculate intersection points for vertical connection
-                    const dxV = endPosCenter.x - startPosCenter.x;
-                    const dyV = endPosCenter.y - startPosCenter.y;
+            for (let k = 0; k < numNeighbors && k < neighbors.length; k++) {
+                const neighborIndex = neighbors[k].index;
+                const neighborItem = itemPositions[neighborIndex];
 
-                    let startEdge: Position;
-                    let endEdge: Position;
+                const connectionKey = [currentItem.id, neighborItem.id]
+                    .sort()
+                    .join("-");
+                if (drawnConnections.has(connectionKey)) continue;
 
-                    // Avoid division by zero if centers are horizontally aligned
-                    if (dyV === 0) {
-                        startEdge = {
-                            x: startPosCenter.x,
-                            y: startPosCenter.y + currentCardInfo.height / 2,
-                        };
-                        endEdge = {
-                            x: endPosCenter.x,
-                            y: endPosCenter.y - belowCardInfo.height / 2,
-                        };
-                    } else {
-                        // Calculate t for intersection with start card's bottom edge
-                        const tStart = currentCardInfo.height / 2 / dyV;
-                        startEdge = {
-                            x: startPosCenter.x + tStart * dxV,
-                            y: startPosCenter.y + currentCardInfo.height / 2,
-                        };
+                const startPosCenter: Position = {
+                    x: currentItem.x,
+                    y: currentItem.y,
+                };
+                const endPosCenter: Position = {
+                    x: neighborItem.x,
+                    y: neighborItem.y,
+                };
 
-                        // Calculate t for intersection with end card's top edge
-                        const tEnd = (dyV - belowCardInfo.height / 2) / dyV;
-                        endEdge = {
-                            x: startPosCenter.x + tEnd * dxV, // Use startPosCenter.x as reference
-                            y: endPosCenter.y - belowCardInfo.height / 2,
+                let startEdge = startPosCenter;
+                let endEdge = endPosCenter;
+
+                const dxL = endPosCenter.x - startPosCenter.x;
+                const dyL = endPosCenter.y - startPosCenter.y;
+                const angleL = Math.atan2(dyL, dxL);
+
+                const intersectPoint = (
+                    center: Position,
+                    width: number,
+                    height: number,
+                    angle: number
+                ): Position => {
+                    const a = width / 2;
+                    const b = height / 2;
+                    const tanAngle = Math.tan(angle);
+
+                    if (Math.abs(angleL) === Math.PI / 2) {
+                        return {
+                            x: center.x,
+                            y: center.y + Math.sign(dyL) * b,
                         };
                     }
 
-                    // Clamp x-coordinates to card boundaries
-                    startEdge.x = Math.max(
-                        startPosCenter.x - currentCardInfo.width / 2,
-                        Math.min(
-                            startPosCenter.x + currentCardInfo.width / 2,
-                            startEdge.x
-                        )
-                    );
-                    endEdge.x = Math.max(
-                        endPosCenter.x - belowCardInfo.width / 2,
-                        Math.min(
-                            endPosCenter.x + belowCardInfo.width / 2,
-                            endEdge.x
-                        )
-                    );
+                    const x =
+                        (a * b) /
+                        Math.sqrt(b * b + a * a * tanAngle * tanAngle);
+                    let finalX = x * Math.sign(Math.cos(angle));
+                    let finalY = x * tanAngle * Math.sign(Math.cos(angle));
 
-                    lines.push({ start: startEdge, end: endEdge });
+                    finalX = Math.max(-a, Math.min(a, finalX));
+                    finalY = Math.max(-b, Math.min(b, finalY));
+
+                    return { x: center.x + finalX, y: center.y + finalY };
+                };
+
+                startEdge = intersectPoint(
+                    startPosCenter,
+                    currentItem.width,
+                    currentItem.height,
+                    angleL
+                );
+                endEdge = intersectPoint(
+                    endPosCenter,
+                    neighborItem.width,
+                    neighborItem.height,
+                    angleL + Math.PI
+                );
+
+                let finalStartEdge = startEdge;
+                let finalEndEdge = endEdge;
+
+                if (currentItem.type === "star") {
+                    finalStartEdge = startPosCenter;
                 }
+
+                if (neighborItem.type === "star") {
+                    finalEndEdge = endPosCenter;
+                }
+
+                lines.push({
+                    start: finalStartEdge,
+                    end: finalEndEdge,
+                    connectionKey: connectionKey,
+                });
+                drawnConnections.add(connectionKey);
             }
         }
         return lines;
-    }, [cardPositions, cardOffsets, gridInfo.cols]); // Updated dependency array
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [itemPositions]);
 
     return (
         <>
             <section
-                className='relative w-full min-h-screen mx-auto flex flex-col items-center justify-center py-16 px-8 md:px-16'
+                className='relative w-full min-h-screen mx-auto flex flex-col items-center justify-start py-16 px-8 md:px-16'
                 aria-hidden={selectedId !== null}
             >
                 <motion.div
@@ -524,56 +630,103 @@ const Projects = () => {
                     whileInView={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.8, ease: "easeInOut" }}
                     viewport={{ once: true, amount: 0.3 }}
-                    className='text-center mb-12'
+                    className='text-center'
                 >
                     <h2 className='font-serif text-5xl md:text-6xl font-bold text-white mb-4'>
                         Projects
                     </h2>
                 </motion.div>
 
-                {/* Grid Container - Add ref and relative positioning */}
                 <div
                     ref={containerRef}
-                    className='relative grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-24 max-w-6xl w-full grid-flow-row-dense items-start'
+                    className='relative max-w-6xl w-full'
+                    style={{ minHeight: containerMinHeight }}
                 >
-                    {/* Absolute container for lines - behind cards */}
-                    <div className='absolute inset-0 pointer-events-none overflow-hidden z-0'>
-                        {linesToDraw.map(({ start, end }) => (
-                            <Line
-                                key={`${start.x}-${start.y}-${end.x}-${end.y}`}
-                                start={start}
-                                end={end}
-                            />
+                    <div
+                        className='absolute inset-0 pointer-events-none overflow-hidden z-0'
+                        style={{
+                            opacity: positionsReady ? 1 : 0,
+                            transition: "opacity 0.6s ease-out",
+                        }}
+                    >
+                        {linesToDraw.map(({ start, end, connectionKey }) => (
+                            <Line key={connectionKey} start={start} end={end} />
                         ))}
                     </div>
 
-                    {projectsData.map((project, index) => (
-                        // Wrapper div ONLY applies the offset via transform
-                        <div
-                            key={`project-wrapper-${index}`}
-                            style={{
-                                transform: `translate(${
-                                    // Re-enable transform
-                                    cardOffsets[index]?.x || 0
-                                }px, ${cardOffsets[index]?.y || 0}px)`,
-                                height: "100%",
-                                width: "100%",
-                            }}
-                        >
-                            <ProjectCard
-                                {...project}
-                                ref={(el) => {
-                                    cardRefs.current[index] = el;
-                                }}
-                                index={index}
-                                layoutId={`card-container-${index}`}
-                                onClick={() => setSelectedId(index)}
-                                className='max-w-sm mx-auto h-full'
-                                isMounted={isMounted}
-                                isSelected={selectedId === index}
-                            />
-                        </div>
-                    ))}
+                    {constellationData.map((item) => {
+                        const positionInfo = itemPositions.find(
+                            (p) => p.id === item.id
+                        ) as ConstellationItem | undefined;
+
+                        if (item.type === "star") {
+                            if (positionsReady && positionInfo) {
+                                const starPosition = {
+                                    x: positionInfo.x,
+                                    y: positionInfo.y,
+                                };
+                                const starRenderSize = 8;
+                                return (
+                                    <StarNode
+                                        key={`item-wrapper-${item.id}`}
+                                        position={starPosition}
+                                        size={starRenderSize}
+                                        isReady={true}
+                                    />
+                                );
+                            } else {
+                                return null;
+                            }
+                        } else {
+                            const wrapperStyle: React.CSSProperties = {
+                                position: "absolute",
+                                left: positionInfo
+                                    ? `${
+                                          positionInfo.x -
+                                          positionInfo.width / 2
+                                      }px`
+                                    : "50%",
+                                top: positionInfo
+                                    ? `${
+                                          positionInfo.y -
+                                          positionInfo.height / 2
+                                      }px`
+                                    : "50%",
+                                width: positionInfo
+                                    ? `${positionInfo.width}px`
+                                    : "auto",
+                                height: positionInfo
+                                    ? `${positionInfo.height}px`
+                                    : "auto",
+                                opacity: positionsReady && positionInfo ? 1 : 0,
+                                transform: !positionInfo
+                                    ? "translate(-50%, -50%)"
+                                    : "translate(0, 0)",
+                                transition: "opacity 0.6s ease-out",
+                                zIndex: 1,
+                            };
+
+                            return (
+                                <div
+                                    key={`item-wrapper-${item.id}`}
+                                    ref={(el) => {
+                                        cardRefs.current[item.id] = el;
+                                    }}
+                                    style={wrapperStyle}
+                                >
+                                    <ProjectCard
+                                        {...item}
+                                        index={item.id}
+                                        layoutId={`card-container-${item.id}`}
+                                        onClick={() => setSelectedId(item.id)}
+                                        className='w-full h-full max-w-xs'
+                                        isMounted={isMounted}
+                                        isSelected={selectedId === item.id}
+                                    />
+                                </div>
+                            );
+                        }
+                    })}
                 </div>
             </section>
 

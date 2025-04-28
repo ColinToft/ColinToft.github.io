@@ -98,6 +98,12 @@ interface Position {
     y: number;
 }
 
+// Stores card center position and dimensions
+interface CardInfo extends Position {
+    width: number;
+    height: number;
+}
+
 const Projects = () => {
     const [selectedId, setSelectedId] = useState<number | null>(null);
     const [isMounted, setIsMounted] = useState(false);
@@ -105,10 +111,16 @@ const Projects = () => {
     const containerRef = useRef<HTMLDivElement>(null);
     // Refs for individual card elements (or wrappers)
     const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
-    // State to store calculated center positions of grid cells
-    const [cardPositions, setCardPositions] = useState<Position[]>([]);
-    // State for grid columns and dimensions
-    const [gridInfo, setGridInfo] = useState({ cols: 3, width: 0, height: 0 });
+    // State to store calculated center positions and dimensions of cards
+    const [cardPositions, setCardPositions] = useState<CardInfo[]>([]);
+    // State for grid columns and dimensions (removed cardWidth, cardHeight)
+    const [gridInfo, setGridInfo] = useState({
+        cols: 3,
+        width: 0,
+        height: 0,
+        // cardWidth: 0, // Removed
+        // cardHeight: 0, // Removed
+    });
     // State for dynamic offsets
     const [cardOffsets, setCardOffsets] = useState<Position[]>([]);
 
@@ -140,6 +152,8 @@ const Projects = () => {
             cols,
             width: containerWidth,
             height: container.offsetHeight,
+            // cardWidth: 0, // Removed
+            // cardHeight: 0, // Removed
         });
 
         const minMargin = 50; // Minimum margin between cards in pixels
@@ -148,29 +162,37 @@ const Projects = () => {
 
         // Determines if a card position maintains minimum margin with existing cards
         const isValidPosition = (
-            basePos: Position,
+            basePos: CardInfo, // Changed from Position to CardInfo
             newOffset: Position,
-            existingPositions: { basePos: Position; offset: Position }[],
-            cardRect: DOMRect
+            existingPositions: { basePos: CardInfo; offset: Position }[] // Changed from Position to CardInfo
+            // cardRect: DOMRect // Removed - use individual dimensions
         ): boolean => {
-            // Calculate the boundaries of the new card using actual dimensions
-            const newLeft = basePos.x + newOffset.x - cardRect.width / 2;
-            const newRight = basePos.x + newOffset.x + cardRect.width / 2;
-            const newTop = basePos.y + newOffset.y - cardRect.height / 2;
-            const newBottom = basePos.y + newOffset.y + cardRect.height / 2;
+            // Calculate the boundaries of the new card using its specific dimensions
+            const newLeft = basePos.x + newOffset.x - basePos.width / 2;
+            const newRight = basePos.x + newOffset.x + basePos.width / 2;
+            const newTop = basePos.y + newOffset.y - basePos.height / 2;
+            const newBottom = basePos.y + newOffset.y + basePos.height / 2;
 
             // Check against all existing card positions
             return existingPositions.every(
                 ({ basePos: existingBase, offset: existingOffset }) => {
-                    // Calculate the boundaries of the existing card
+                    // Calculate the boundaries of the existing card using its specific dimensions
                     const existingLeft =
-                        existingBase.x + existingOffset.x - cardRect.width / 2;
+                        existingBase.x +
+                        existingOffset.x -
+                        existingBase.width / 2;
                     const existingRight =
-                        existingBase.x + existingOffset.x + cardRect.width / 2;
+                        existingBase.x +
+                        existingOffset.x +
+                        existingBase.width / 2;
                     const existingTop =
-                        existingBase.y + existingOffset.y - cardRect.height / 2;
+                        existingBase.y +
+                        existingOffset.y -
+                        existingBase.height / 2;
                     const existingBottom =
-                        existingBase.y + existingOffset.y + cardRect.height / 2;
+                        existingBase.y +
+                        existingOffset.y +
+                        existingBase.height / 2;
 
                     // Check if the cards are too close horizontally or vertically
                     const horizontalOverlap = !(
@@ -205,17 +227,27 @@ const Projects = () => {
         }
 
         // Get the first card's dimensions to use as reference
-        const cardRect = cardElements[0].getBoundingClientRect();
+        // const cardRect = cardElements[0].getBoundingClientRect(); // Removed - calculate per card
         const containerRect = container.getBoundingClientRect();
 
-        // Calculate base positions from actual card positions
-        const basePositions: Position[] = cardElements.map((card) => {
+        // Calculate base positions AND dimensions from actual card elements
+        const basePositions: CardInfo[] = cardElements.map((card) => {
+            // Changed to CardInfo[]
             const rect = card.getBoundingClientRect();
             return {
                 x: rect.left - containerRect.left + rect.width / 2,
                 y: rect.top - containerRect.top + rect.height / 2,
+                width: rect.width, // Store width
+                height: rect.height, // Store height
             };
         });
+
+        // Update grid info with card dimensions
+        // setGridInfo((prev) => ({ // Removed - dimensions stored in cardPositions now
+        //     ...prev,
+        //     cardWidth: cardRect.width,
+        //     cardHeight: cardRect.height,
+        // }));
 
         // Generate offsets with collision avoidance
         for (let i = 0; i < projectsData.length; i++) {
@@ -241,8 +273,8 @@ const Projects = () => {
                         basePositions.slice(0, i).map((pos, idx) => ({
                             basePos: pos,
                             offset: newOffsets[idx],
-                        })),
-                        cardRect
+                        }))
+                        // cardRect // Removed
                     )
                 ) {
                     newOffsets.push(candidateOffset);
@@ -325,20 +357,23 @@ const Projects = () => {
         if (
             cardPositions.length !== cardOffsets.length ||
             cardPositions.length !== projectsData.length
+            // gridInfo.cardWidth === 0 || // Removed checks
+            // gridInfo.cardHeight === 0
         )
             return lines;
 
+        // const { cols, cardWidth, cardHeight } = gridInfo; // Removed cardWidth, cardHeight
         const { cols } = gridInfo;
 
         for (let i = 0; i < projectsData.length; i++) {
-            const currentPos = cardPositions[i];
+            const currentCardInfo = cardPositions[i]; // Now contains dimensions
             // ALWAYS use the calculated offset, regardless of selection
             const currentOffset = cardOffsets[i];
-            if (!currentPos || !currentOffset) continue;
+            if (!currentCardInfo || !currentOffset) continue;
 
-            const startPos: Position = {
-                x: currentPos.x + currentOffset.x,
-                y: currentPos.y + currentOffset.y,
+            const startPosCenter: Position = {
+                x: currentCardInfo.x + currentOffset.x,
+                y: currentCardInfo.y + currentOffset.y,
             };
 
             const currentCol = i % cols;
@@ -349,35 +384,53 @@ const Projects = () => {
                 currentCol < cols - 1 &&
                 rightNeighborIndex < projectsData.length
             ) {
-                const rightPos = cardPositions[rightNeighborIndex];
+                const rightCardInfo = cardPositions[rightNeighborIndex]; // Now contains dimensions
                 // ALWAYS use the calculated offset for the neighbor
                 const rightOffset = cardOffsets[rightNeighborIndex];
-                if (rightPos && rightOffset) {
-                    const endPos: Position = {
-                        x: rightPos.x + rightOffset.x,
-                        y: rightPos.y + rightOffset.y,
+                if (rightCardInfo && rightOffset) {
+                    const endPosCenter: Position = {
+                        x: rightCardInfo.x + rightOffset.x,
+                        y: rightCardInfo.y + rightOffset.y,
                     };
-                    lines.push({ start: startPos, end: endPos });
+                    // Calculate edge points for horizontal connection using individual widths
+                    const startEdge: Position = {
+                        x: startPosCenter.x + currentCardInfo.width / 2, // Use current card width
+                        y: startPosCenter.y,
+                    };
+                    const endEdge: Position = {
+                        x: endPosCenter.x - rightCardInfo.width / 2, // Use right card width
+                        y: endPosCenter.y,
+                    };
+                    lines.push({ start: startEdge, end: endEdge });
                 }
             }
 
             // Connect vertically (if not last row)
             const belowNeighborIndex = i + cols;
             if (belowNeighborIndex < projectsData.length) {
-                const belowPos = cardPositions[belowNeighborIndex];
+                const belowCardInfo = cardPositions[belowNeighborIndex]; // Now contains dimensions
                 // ALWAYS use the calculated offset for the neighbor
                 const belowOffset = cardOffsets[belowNeighborIndex];
-                if (belowPos && belowOffset) {
-                    const endPos: Position = {
-                        x: belowPos.x + belowOffset.x,
-                        y: belowPos.y + belowOffset.y,
+                if (belowCardInfo && belowOffset) {
+                    const endPosCenter: Position = {
+                        x: belowCardInfo.x + belowOffset.x,
+                        y: belowCardInfo.y + belowOffset.y,
                     };
-                    lines.push({ start: startPos, end: endPos });
+                    // Calculate edge points for vertical connection using individual heights
+                    const startEdge: Position = {
+                        x: startPosCenter.x,
+                        y: startPosCenter.y + currentCardInfo.height / 2, // Use current card height
+                    };
+                    const endEdge: Position = {
+                        x: endPosCenter.x,
+                        y: endPosCenter.y - belowCardInfo.height / 2, // Use below card height
+                    };
+                    lines.push({ start: startEdge, end: endEdge });
                 }
             }
         }
         return lines;
-    }, [cardPositions, cardOffsets, gridInfo]);
+    }, [cardPositions, cardOffsets, gridInfo.cols]); // Updated dependency array
 
     return (
         <>
@@ -414,15 +467,12 @@ const Projects = () => {
                     </div>
 
                     {projectsData.map((project, index) => (
-                        // Wrapper div holds ref and ALWAYS applies the offset via transform
+                        // Wrapper div ONLY applies the offset via transform
                         <div
                             key={`project-wrapper-${index}`}
-                            ref={(el) => {
-                                cardRefs.current[index] = el;
-                            }}
                             style={{
-                                // Position is handled by the grid layout itself
                                 transform: `translate(${
+                                    // Re-enable transform
                                     cardOffsets[index]?.x || 0
                                 }px, ${cardOffsets[index]?.y || 0}px)`,
                                 height: "100%",
@@ -431,6 +481,9 @@ const Projects = () => {
                         >
                             <ProjectCard
                                 {...project}
+                                ref={(el) => {
+                                    cardRefs.current[index] = el;
+                                }}
                                 index={index}
                                 layoutId={`card-container-${index}`}
                                 onClick={() => setSelectedId(index)}

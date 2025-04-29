@@ -432,7 +432,9 @@ const Projects = () => {
 
         const handleResize = () => {
             setPositionsReady(false); // Reset on resize start
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             clearTimeout((window as any).__resizeTimeout);
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (window as any).__resizeTimeout = setTimeout(() => {
                 console.log("Running resize position calculation...");
                 calculatePositions(); // Recalculate after debounce
@@ -443,6 +445,7 @@ const Projects = () => {
         resizeObserver.observe(containerRef.current);
 
         return () => {
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             clearTimeout((window as any).__resizeTimeout); // Cleanup resize timer
             resizeObserver.disconnect();
         };

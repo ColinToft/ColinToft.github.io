@@ -5,6 +5,7 @@ import { useScroll, useTransform } from "framer-motion";
 import Hero from "@/components/Hero";
 import About from "@/components/About";
 import Projects from "@/components/Projects";
+import Footer from "@/components/Footer";
 import { useBackgroundStore } from "@/store/backgroundStore";
 
 export default function Home() {
@@ -56,7 +57,7 @@ export default function Home() {
                 <About />
             </div>
             <Projects />
-            {/* Add other sections as needed */}
+            <Footer />
         </main>
     );
 }

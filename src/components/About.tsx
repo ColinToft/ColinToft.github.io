@@ -37,28 +37,32 @@ const About = () => {
                     <h2 className='font-serif text-4xl md:text-5xl font-bold text-white mb-6'>
                         About Me
                     </h2>
-                    <p className='text-slate-200 text-lg mb-4 leading-relaxed font-semibold'>
-                        Hi, I&apos;m Colin, a fourth-year computer science
-                        student at the University of Waterloo, passionate about
-                        building technology for social impact.
+                    <p className='text-slate-200 text-lg mb-4 leading-relaxed'>
+                        <span className='font-semibold'>
+                            Hi, I&apos;m Colin.
+                        </span>{" "}
+                        I&apos;ve always loved learning how things work —
+                        growing up that meant juggling, Rubik&apos;s cubes, and
+                        card tricks. These days it means exploring everything
+                        from low-level systems and compilers to AI safety and
+                        alignment.
                     </p>
                     <p className='text-slate-200 text-lg mb-4 leading-relaxed'>
-                        Since I was young, I&apos;ve loved uncovering how things
-                        work. That curiosity led me to software, where I could
-                        explore systems and build my own. It also sparked a
-                        fascination with compilers, the systems behind software
-                        that translate it into machine instructions.
+                        I&apos;m currently an Anthropic Fellow focused on red
+                        teaming for AI control, where I study whether current
+                        monitoring systems can reliably detect unintended model
+                        behavior. I&apos;m also finishing up my Computer Science
+                        degree at the University of Waterloo.
+                    </p>
+                    <p className='text-slate-200 text-lg mb-4 leading-relaxed'>
+                        Previously, I&apos;ve worked on GPU compilers at NVIDIA,
+                        ML for autonomous driving at Waabi, and co-authored a
+                        paper on AI-enabled compiler optimization (ACM/IEEE
+                        CASES 2024).
                     </p>
                     <p className='text-slate-200 text-lg mb-6 leading-relaxed'>
-                        Recently, I&apos;ve been diving into AI interpretability
-                        and alignment, reading about how models operate and ways
-                        to ensure they act for humanity&apos;s benefit. This
-                        field connects my love of understanding complex systems
-                        with the ability to make a real-world difference.
-                    </p>
-                    <p className='text-slate-200 text-lg mb-6 leading-relaxed'>
-                        Outside of school and internships, you can find me
-                        developing software for nonprofits at{" "}
+                        Outside of research, I build software for nonprofits
+                        at{" "}
                         <a
                             href='https://uwblueprint.org'
                             target='_blank'
@@ -67,7 +71,7 @@ const About = () => {
                         >
                             UW Blueprint
                         </a>
-                        , working on creative projects at{" "}
+                        , work on creative projects at{" "}
                         <a
                             href='https://socratica.info'
                             target='_blank'
@@ -83,9 +87,9 @@ const About = () => {
                             rel='noopener noreferrer'
                             className='text-white underline hover:text-slate-300'
                         >
-                            writing and producing music
+                            write and produce music
                         </a>
-                        , and staying active through running and rock climbing.
+                        , and stay active through running and rock climbing.
                     </p>
 
                     {/* Social Links */}

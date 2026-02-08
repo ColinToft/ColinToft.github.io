@@ -12,7 +12,7 @@ const TICKER_WORDS = [
     "Innovator",
     "Problem Solver",
     "Creator",
-    "Big Brother",
+    "Brother",
     "Thinker",
 ];
 

@@ -195,6 +195,8 @@ const ProjectCard = forwardRef<HTMLDivElement, ProjectCardProps>(
                 onClick={onClick}
                 className={`${baseClasses} ${gridCardClasses} ${className} cursor-pointer`}
                 layoutId={layoutId}
+                whileHover={{ scale: 1.03 }}
+                transition={{ type: "spring", stiffness: 300, damping: 20 }}
             >
                 {cardContent}
             </motion.div>

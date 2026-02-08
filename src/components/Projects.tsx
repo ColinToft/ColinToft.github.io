@@ -33,15 +33,6 @@ const projectsData = [
         date: "April 2023 - September 2024",
     },
     {
-        title: "JogRoute",
-        description:
-            "A website allowing users to create running routes with a specified length and location.",
-        tags: ["Full Stack", "Go", "OpenStreetMap API", "React", "TypeScript"],
-        githubLink: "https://github.com/ColinToft/JogRoute",
-        liveLink: "https://jogroute.netlify.app",
-        date: "2023",
-    },
-    {
         title: "ZIR Compiler (Work in Progress)",
         description:
             "A custom compiler for a C-like programming language, inspired by the LLVM project.",
@@ -51,33 +42,13 @@ const projectsData = [
         date: "2023 - Present",
     },
     {
-        title: "Spotify Music Timer",
+        title: "JogRoute",
         description:
-            "A website that creates playlists of a specific length, based on the music in your Spotify account.",
-        tags: ["HTML", "CSS", "JavaScript", "Bootstrap", "Spotify API"],
-        githubLink: undefined,
-        liveLink: "https://colintoft.com/musictimer",
-        date: "2022",
-    },
-    {
-        title: "Remember",
-        description:
-            "A to-do list app that allows for the viewing and creation of events in a single-page view. The list layout allows you to see all upcoming events at a glance, and the sidebar allows you to create new events by simply tapping on the date.",
-        tags: ["Python", "Pythonista", "iOS"],
-        githubLink: "https://github.com/ColinToft/remember",
-        liveLink: undefined,
-        embedUrl: "https://www.youtube.com/embed/W2Ua6q78pWw",
-        date: "2021",
-    },
-    {
-        title: "Shape Sprint",
-        description: "A Geometry Dash clone.",
-        tags: ["Java", "Swing", "Game Development"],
-        githubLink: "https://github.com/ColinToft/shapesprint",
-        liveLink:
-            "https://www.dropbox.com/s/79bq4utsyhm7ocf/ShapeSprint.jar?dl=0",
-        embedUrl: "https://www.youtube.com/embed/aXmeX1_r5tk",
-        date: "2020",
+            "A website allowing users to create running routes with a specified length and location.",
+        tags: ["Full Stack", "Go", "OpenStreetMap API", "React", "TypeScript"],
+        githubLink: "https://github.com/ColinToft/JogRoute",
+        liveLink: "https://jogroute.netlify.app",
+        date: "2023",
     },
     {
         title: "Middle C",
@@ -89,6 +60,15 @@ const projectsData = [
         embedUrl:
             "https://www.youtube.com/embed/videoseries?list=PLZ6QsGiOiHMui2urao_Uk0zVsF6CyJEtc",
         date: "2019 - Present",
+    },
+    {
+        title: "Spotify Music Timer",
+        description:
+            "A website that creates playlists of a specific length, based on the music in your Spotify account.",
+        tags: ["HTML", "CSS", "JavaScript", "Bootstrap", "Spotify API"],
+        githubLink: undefined,
+        liveLink: "https://colintoft.com/musictimer",
+        date: "2022",
     },
 ];
 
@@ -130,13 +110,19 @@ interface StarInfo extends Position {
 type ConstellationItemBase = { id: number; type: "project" | "star" };
 type ConstellationItem = (CardInfo | StarInfo) & ConstellationItemBase;
 
+const MOBILE_BREAKPOINT = 768;
+// Scale canvas height with project count so we don't hardcode a magic number
+const BASE_CANVAS_HEIGHT = Math.max(projectsData.length * 130, 400);
+
 const Projects = () => {
     const [selectedId, setSelectedId] = useState<number | null>(null);
     const [isMounted, setIsMounted] = useState(false);
+    const [isMobile, setIsMobile] = useState(false);
     const containerRef = useRef<HTMLDivElement>(null);
+    const modalRef = useRef<HTMLDivElement>(null);
     const cardRefs = useRef<(HTMLDivElement | null)[]>([]);
     const [itemPositions, setItemPositions] = useState<ConstellationItem[]>([]);
-    const [containerMinHeight, setContainerMinHeight] = useState("800px");
+    const [containerMinHeight, setContainerMinHeight] = useState(`${BASE_CANVAS_HEIGHT}px`);
     const [positionsReady, setPositionsReady] = useState(false);
 
     useEffect(() => {
@@ -151,8 +137,7 @@ const Projects = () => {
 
         const container = containerRef.current;
         const containerWidth = container.offsetWidth;
-        let currentTargetHeight = Math.max(container.offsetHeight, 800);
-        const initialContainerHeight = currentTargetHeight;
+        let currentTargetHeight = Math.max(container.offsetHeight, BASE_CANVAS_HEIGHT);
 
         const cardElements = cardRefs.current.filter(
             (ref) => ref !== null
@@ -165,7 +150,8 @@ const Projects = () => {
             return;
         }
 
-        const itemDimensions = constellationData.map((item, index) => {
+        // Measure actual dimensions for each item
+        const actualDimensions = constellationData.map((item, index) => {
             if (item.type === "project") {
                 const cardElement = cardElements[item.id];
                 if (!cardElement) {
@@ -199,6 +185,22 @@ const Projects = () => {
                 };
             }
         });
+
+        // Use uniform max height for all project cards during placement
+        // so we can safely sort/swap positions afterward
+        const maxProjectHeight = Math.max(
+            ...actualDimensions
+                .filter((d) => d.type === "project" && d.height > 0)
+                .map((d) => d.height)
+        );
+
+        const itemDimensions = actualDimensions.map((d) => ({
+            ...d,
+            height:
+                d.type === "project" && d.height > 0
+                    ? maxProjectHeight
+                    : d.height,
+        }));
 
         const minMargin = 100;
         const maxAttemptsPerCard = 1500;
@@ -367,6 +369,23 @@ const Projects = () => {
             }
         }
 
+        // Sort project positions by y-coordinate and reassign IDs
+        // so earlier projects in the data array appear higher visually
+        const projectPositions = finalPositions
+            .filter((p) => p.type === "project")
+            .sort((a, b) => a.y - b.y);
+
+        projectPositions.forEach((pos, sortedIndex) => {
+            const actual = actualDimensions.find(
+                (d) => d.type === "project" && d.id === sortedIndex
+            );
+            pos.id = sortedIndex;
+            if (actual) {
+                pos.width = actual.width;
+                pos.height = actual.height;
+            }
+        });
+
         let yOffset = 0;
         if (finalPositions.length > 0) {
             const minY = Math.min(
@@ -375,26 +394,18 @@ const Projects = () => {
             yOffset = Math.max(0, minY - edgePadding);
 
             if (yOffset > 0) {
-                console.log(
-                    `Shifting constellation up by ${yOffset.toFixed(1)}px`
-                );
                 finalPositions.forEach((p) => {
                     p.y -= yOffset;
                 });
             }
         }
 
-        let finalCalculatedMinHeight = 800;
+        let finalCalculatedMinHeight = BASE_CANVAS_HEIGHT;
         if (finalPositions.length > 0) {
             const maxY = Math.max(
                 ...finalPositions.map((p) => p.y + p.height / 2)
             );
             finalCalculatedMinHeight = maxY + edgePadding;
-            finalCalculatedMinHeight = Math.max(
-                finalCalculatedMinHeight,
-                initialContainerHeight,
-                800
-            );
         }
 
         setContainerMinHeight(`${finalCalculatedMinHeight}px`);
@@ -414,30 +425,34 @@ const Projects = () => {
 
         // Schedule the first calculation after a delay
         const initialTimer = setTimeout(() => {
-            console.log("Running initial position calculation...");
             setPositionsReady(false); // Ensure false before starting
             calculatePositions();
         }, 300); // Increased delay (e.g., 300ms)
 
         return () => {
-            console.log("Cleaning up initial calculation timer.");
             clearTimeout(initialTimer);
         }; // Cleanup timer
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [isMounted]); // Rerun only if isMounted changes (effectively runs once after mount)
 
-    // Effect for handling resize
+    // Effect for handling resize — only react to width changes
+    // (height changes are self-inflicted by setContainerMinHeight)
     useEffect(() => {
-        if (!containerRef.current) return; // Need container ref
+        if (!containerRef.current) return;
 
-        const handleResize = () => {
-            setPositionsReady(false); // Reset on resize start
+        let lastWidth = containerRef.current.offsetWidth;
+
+        const handleResize = (entries: ResizeObserverEntry[]) => {
+            const newWidth = entries[0]?.contentRect.width ?? lastWidth;
+            if (Math.abs(newWidth - lastWidth) < 1) return; // Ignore height-only changes
+            lastWidth = newWidth;
+
+            setPositionsReady(false);
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             clearTimeout((window as any).__resizeTimeout);
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
             (window as any).__resizeTimeout = setTimeout(() => {
-                console.log("Running resize position calculation...");
-                calculatePositions(); // Recalculate after debounce
+                calculatePositions();
             }, 200);
         };
 
@@ -446,10 +461,30 @@ const Projects = () => {
 
         return () => {
             // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            clearTimeout((window as any).__resizeTimeout); // Cleanup resize timer
+            clearTimeout((window as any).__resizeTimeout);
             resizeObserver.disconnect();
         };
-    }, [calculatePositions]); // Keep dependency on calculatePositions
+    }, [calculatePositions]);
+
+    // Detect mobile viewport
+    useEffect(() => {
+        const checkMobile = () =>
+            setIsMobile(window.innerWidth < MOBILE_BREAKPOINT);
+        checkMobile();
+        window.addEventListener("resize", checkMobile);
+        return () => window.removeEventListener("resize", checkMobile);
+    }, []);
+
+    // Keyboard accessibility: Escape to close modal + focus management
+    useEffect(() => {
+        if (selectedId === null) return;
+        const handleKeyDown = (e: KeyboardEvent) => {
+            if (e.key === "Escape") setSelectedId(null);
+        };
+        document.addEventListener("keydown", handleKeyDown);
+        modalRef.current?.focus();
+        return () => document.removeEventListener("keydown", handleKeyDown);
+    }, [selectedId]);
 
     interface LineProps {
         start: Position;
@@ -636,97 +671,134 @@ const Projects = () => {
                     </h2>
                 </motion.div>
 
-                <div
-                    ref={containerRef}
-                    className='relative max-w-6xl w-full'
-                    style={{ minHeight: containerMinHeight }}
-                >
-                    <div
-                        className='absolute inset-0 pointer-events-none overflow-hidden z-0'
-                        style={{
-                            opacity: positionsReady ? 1 : 0,
-                            transition: "opacity 0.6s ease-out",
-                        }}
-                    >
-                        {linesToDraw.map(({ start, end, connectionKey }) => (
-                            <Line key={connectionKey} start={start} end={end} />
+                {isMobile ? (
+                    <div className='flex flex-col gap-6 max-w-xs mx-auto w-full'>
+                        {projectsData.map((project, index) => (
+                            <motion.div
+                                key={`mobile-project-${index}`}
+                                initial={{ opacity: 0, y: 30 }}
+                                whileInView={{ opacity: 1, y: 0 }}
+                                transition={{
+                                    duration: 0.5,
+                                    delay: index * 0.05,
+                                }}
+                                viewport={{ once: true, amount: 0.2 }}
+                            >
+                                <ProjectCard
+                                    {...project}
+                                    index={index}
+                                    layoutId={`card-container-${index}`}
+                                    onClick={() => setSelectedId(index)}
+                                    isMounted={isMounted}
+                                    isSelected={selectedId === index}
+                                />
+                            </motion.div>
                         ))}
                     </div>
-
-                    {constellationData.map((item) => {
-                        const positionInfo = itemPositions.find(
-                            (p) => p.id === item.id
-                        ) as ConstellationItem | undefined;
-
-                        if (item.type === "star") {
-                            if (positionsReady && positionInfo) {
-                                const starPosition = {
-                                    x: positionInfo.x,
-                                    y: positionInfo.y,
-                                };
-                                const starRenderSize = 8;
-                                return (
-                                    <StarNode
-                                        key={`item-wrapper-${item.id}`}
-                                        position={starPosition}
-                                        size={starRenderSize}
-                                        isReady={true}
-                                    />
-                                );
-                            } else {
-                                return null;
-                            }
-                        } else {
-                            const wrapperStyle: React.CSSProperties = {
-                                position: "absolute",
-                                left: positionInfo
-                                    ? `${
-                                          positionInfo.x -
-                                          positionInfo.width / 2
-                                      }px`
-                                    : "50%",
-                                top: positionInfo
-                                    ? `${
-                                          positionInfo.y -
-                                          positionInfo.height / 2
-                                      }px`
-                                    : "50%",
-                                width: positionInfo
-                                    ? `${positionInfo.width}px`
-                                    : "auto",
-                                height: positionInfo
-                                    ? `${positionInfo.height}px`
-                                    : "auto",
-                                opacity: positionsReady && positionInfo ? 1 : 0,
-                                transform: !positionInfo
-                                    ? "translate(-50%, -50%)"
-                                    : "translate(0, 0)",
+                ) : (
+                    <div
+                        ref={containerRef}
+                        className='relative max-w-6xl w-full'
+                        style={{ minHeight: containerMinHeight }}
+                    >
+                        <div
+                            className='absolute inset-0 pointer-events-none overflow-hidden z-0'
+                            style={{
+                                opacity: positionsReady ? 1 : 0,
                                 transition: "opacity 0.6s ease-out",
-                                zIndex: 1,
-                            };
-
-                            return (
-                                <div
-                                    key={`item-wrapper-${item.id}`}
-                                    ref={(el) => {
-                                        cardRefs.current[item.id] = el;
-                                    }}
-                                    style={wrapperStyle}
-                                >
-                                    <ProjectCard
-                                        {...item}
-                                        index={item.id}
-                                        layoutId={`card-container-${item.id}`}
-                                        onClick={() => setSelectedId(item.id)}
-                                        className='w-full h-full max-w-xs'
-                                        isMounted={isMounted}
-                                        isSelected={selectedId === item.id}
+                            }}
+                        >
+                            {linesToDraw.map(
+                                ({ start, end, connectionKey }) => (
+                                    <Line
+                                        key={connectionKey}
+                                        start={start}
+                                        end={end}
                                     />
-                                </div>
-                            );
-                        }
-                    })}
-                </div>
+                                )
+                            )}
+                        </div>
+
+                        {constellationData.map((item) => {
+                            const positionInfo = itemPositions.find(
+                                (p) => p.id === item.id
+                            ) as ConstellationItem | undefined;
+
+                            if (item.type === "star") {
+                                if (positionsReady && positionInfo) {
+                                    const starPosition = {
+                                        x: positionInfo.x,
+                                        y: positionInfo.y,
+                                    };
+                                    const starRenderSize = 8;
+                                    return (
+                                        <StarNode
+                                            key={`item-wrapper-${item.id}`}
+                                            position={starPosition}
+                                            size={starRenderSize}
+                                            isReady={true}
+                                        />
+                                    );
+                                } else {
+                                    return null;
+                                }
+                            } else {
+                                const wrapperStyle: React.CSSProperties = {
+                                    position: "absolute",
+                                    left: positionInfo
+                                        ? `${
+                                              positionInfo.x -
+                                              positionInfo.width / 2
+                                          }px`
+                                        : "50%",
+                                    top: positionInfo
+                                        ? `${
+                                              positionInfo.y -
+                                              positionInfo.height / 2
+                                          }px`
+                                        : "50%",
+                                    width: positionInfo
+                                        ? `${positionInfo.width}px`
+                                        : "auto",
+                                    height: positionInfo
+                                        ? `${positionInfo.height}px`
+                                        : "auto",
+                                    opacity:
+                                        positionsReady && positionInfo ? 1 : 0,
+                                    transform: !positionInfo
+                                        ? "translate(-50%, -50%)"
+                                        : "translate(0, 0)",
+                                    transition: "opacity 0.6s ease-out",
+                                    zIndex: 1,
+                                };
+
+                                return (
+                                    <div
+                                        key={`item-wrapper-${item.id}`}
+                                        ref={(el) => {
+                                            cardRefs.current[item.id] = el;
+                                        }}
+                                        style={wrapperStyle}
+                                    >
+                                        <ProjectCard
+                                            {...item}
+                                            index={item.id}
+                                            layoutId={`card-container-${item.id}`}
+                                            onClick={() =>
+                                                setSelectedId(item.id)
+                                            }
+                                            className='w-full h-full max-w-xs'
+                                            isMounted={isMounted}
+                                            isSelected={
+                                                selectedId === item.id
+                                            }
+                                        />
+                                    </div>
+                                );
+                            }
+                        })}
+                    </div>
+                )}
             </section>
 
             <AnimatePresence>
@@ -745,12 +817,17 @@ const Projects = () => {
             <AnimatePresence>
                 {selectedProject && selectedId !== null && (
                     <motion.div
-                        className='fixed inset-0 flex items-center justify-center z-50 p-4'
+                        ref={modalRef}
+                        tabIndex={-1}
+                        className='fixed inset-0 flex items-center justify-center z-50 p-4 outline-none'
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.3 }}
                         onClick={() => setSelectedId(null)}
+                        role='dialog'
+                        aria-modal='true'
+                        aria-label={selectedProject.title}
                     >
                         <ProjectCard
                             {...selectedProject}

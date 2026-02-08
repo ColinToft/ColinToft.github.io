@@ -9,6 +9,29 @@ export const metadata: Metadata = {
     title: "Colin Toft",
     description:
         "Computer Science student exploring systems, AI, and visual computing",
+    openGraph: {
+        title: "Colin Toft",
+        description:
+            "Computer Science student exploring systems, AI, and visual computing",
+        url: "https://colintoft.com",
+        siteName: "Colin Toft",
+        type: "website",
+        images: [
+            {
+                url: "https://colintoft.com/images/cover.webp",
+                width: 1200,
+                height: 630,
+                alt: "Colin Toft",
+            },
+        ],
+    },
+    twitter: {
+        card: "summary_large_image",
+        title: "Colin Toft",
+        description:
+            "Computer Science student exploring systems, AI, and visual computing",
+        images: ["https://colintoft.com/images/cover.webp"],
+    },
 };
 
 export default function RootLayout({
